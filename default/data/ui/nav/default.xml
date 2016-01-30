@@ -1,0 +1,16 @@
+<nav>
+  
+<view name="qumulo_overview" default="true"/>
+  
+<a href="../../../en-US/app/qumulo_app/search?q=search%20index%3Dqumulo">Search JSON</a>
+
+<collection label="Manage">
+  <a href="../../../en-US/manager/qumulo_app/apps/local/qumulo_app/setup?action=edit">Setup</a>
+
+  <a href="../../../en-US/manager/qumulo_app/data/inputs/qumulo">Qumulo REST Inputs</a>
+ 
+</collection>
+
+<a href="http://www.qumulo.com">Qumulo Website</a>
+
+</nav>

@@ -1,0 +1,27 @@
+<setup>
+
+
+  <block title="Qumulo Setup" endpoint="qumulo/qumulosetup" entity="qumulo">
+
+    <text>Configure your Qumulo REST API Settings here</text>
+
+        <input field="username">
+            <label>'username' for authentication , defaults to admin</label>
+            <type>text</type>
+        </input>
+        <input field="password">
+            <label>'password' for authentication , defaults to admin</label>
+            <type>password</type>
+        </input>
+        <input field="port">
+            <label>port 'number' for the API server port , defaults to 8000</label>
+            <type>text</type>
+        </input>
+        <input field="nodehost">
+            <label>An IP address or hostname of a node in the cluster.Use 'localhost' (the default) when running directly on the node</label>
+            <type>text</type>
+        </input>
+   </block>
+
+
+</setup>
