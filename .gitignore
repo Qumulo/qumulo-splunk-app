@@ -1,3 +1,4 @@
+.idea/
 q*.txt
 node_modules/*
 *.pyc
