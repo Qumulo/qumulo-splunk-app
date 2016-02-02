@@ -15,27 +15,27 @@ import qumulo.lib.request as request
 @request.request
 def halt(conninfo, credentials):
     method = "POST"
-    uri = "/v1/shutdown/halt"
+    uri = "/v1/node/halt"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def restart(conninfo, credentials):
     method = "POST"
-    uri = "/v1/shutdown/restart"
+    uri = "/v1/node/reboot"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def halt_cluster(conninfo, credentials):
     method = "POST"
-    uri = "/v1/shutdown/halt_cluster"
+    uri = "/v1/cluster/halt"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def restart_cluster(conninfo, credentials):
     method = "POST"
-    uri = "/v1/shutdown/restart_cluster"
+    uri = "/v1/cluster/reboot"
 
     return request.rest_request(conninfo, credentials, method, uri)

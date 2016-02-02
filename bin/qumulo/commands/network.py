@@ -16,7 +16,6 @@ import qumulo.lib.util
 import qumulo.rest.network as network
 
 class ModifyClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "network_conf_mod"
     DESCRIPTION = "Modify cluster-wide network config"
 
@@ -61,7 +60,6 @@ class ModifyClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
                 **attributes)
 
 class MonitorNetworkCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "network_poll"
     DESCRIPTION = "Poll network changes"
 
@@ -78,7 +76,6 @@ class MonitorNetworkCommand(qumulo.lib.opts.Subcommand):
             print network.list_network_status(conninfo, credentials)
 
 class GetClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "network_conf_get"
     DESCRIPTION = "Get cluster-wide network config"
 
@@ -87,7 +84,6 @@ class GetClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
         print network.get_cluster_network_config(conninfo, credentials)
 
 class GetStaticIpAllocationCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "static_ip_allocation"
     DESCRIPTION = "Get cluster-wide static IP allocation"
 
@@ -109,7 +105,6 @@ class GetStaticIpAllocationCommand(qumulo.lib.opts.Subcommand):
             args.try_ranges, args.try_netmask, args.try_floating_ranges)
 
 class GetFloatingIpAllocationCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "floating_ip_allocation"
     DESCRIPTION = "Get cluster-wide floating IP allocation"
 

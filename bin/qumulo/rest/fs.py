@@ -16,25 +16,23 @@ from qumulo.lib.uri import UriBuilder
 @request.request
 def read_fs_stats(conninfo, credentials):
     method = "GET"
-    uri = build_fs_uri(None)
+    uri = "/v1/file-system"
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def set_acl(conninfo, credentials, path=None, id_=None, control=None,
             aces=None, if_match=None):
-    assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path).add_query_param("acl")
-    if id_ is not None:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_).add_query_param("acl")
-    if control == None or aces == None:
+
+    if not control or not aces:
         raise ValueError("Must specify both control flags and ACEs")
+
+    assert (path is not None) ^ (id_ is not None)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "acl"])
 
     control = list(control)
     aces = list(aces)
-    if_match = if_match if if_match is None else unicode(if_match)
+    if_match = None if not if_match else unicode(if_match)
 
     config = {'aces': aces, 'control': control}
     method = "PUT"
@@ -45,31 +43,21 @@ def set_acl(conninfo, credentials, path=None, id_=None, control=None,
 def set_attr(conninfo, credentials, mode, owner, group, size,
              modification_time, change_time, path=None, id_=None,
              if_match=None):
+
     assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path).add_query_param("attributes")
-    if id_ is not None:
-        path = unicode(id_)
-        uri = build_fs_id_uri(id_).add_query_param("attributes")
-    if if_match:
-        if_match = unicode(if_match)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "attributes"])
+    if_match = None if not if_match else unicode(if_match)
 
     method = "PUT"
 
     config = {
-        'mode':
-            unicode(mode),
-        'owner':
-            unicode(owner),
-        'group':
-            unicode(group),
-        'size':
-            unicode(size),
-        'modification_time':
-            unicode(modification_time),
-        'change_time':
-            unicode(change_time),
+        'mode': unicode(mode),
+        'owner': unicode(owner),
+        'group': unicode(group),
+        'size': unicode(size),
+        'modification_time': unicode(modification_time),
+        'change_time': unicode(change_time),
     }
     return request.rest_request(conninfo, credentials, method, unicode(uri),
         body=config, if_match=if_match)
@@ -77,16 +65,15 @@ def set_attr(conninfo, credentials, mode, owner, group, size,
 @request.request
 def get_file_attr(conninfo, credentials, id_):
     method = "GET"
-    uri = build_fs_file_uri([id_, "attributes"])
+    uri = build_files_uri([id_, "info", "attributes"])
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def set_file_attr(conninfo, credentials, mode, owner, group, size,
                   creation_time, modification_time, change_time, id_,
                   if_match=None):
-    uri = build_fs_file_uri([id_, "attributes"])
-    if if_match:
-        if_match = unicode(if_match)
+    uri = build_files_uri([id_, "info", "attributes"])
+    if_match = None if not if_match else unicode(if_match)
 
     method = "PATCH"
 
@@ -112,15 +99,11 @@ def set_file_attr(conninfo, credentials, mode, owner, group, size,
 
 @request.request
 def write_file(conninfo, credentials, data_file, path=None, id_=None,
-               if_match=None):
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path)
-    else:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_)
-
-    if_match = if_match if if_match is None else unicode(if_match)
+       if_match=None):
+    assert (path is not None) ^ (id_ is not None)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "data"])
+    if_match = None if not if_match else unicode(if_match)
 
     method = "PUT"
     return request.rest_request(conninfo, credentials, method, unicode(uri),
@@ -130,36 +113,17 @@ def write_file(conninfo, credentials, data_file, path=None, id_=None,
 @request.request
 def get_acl(conninfo, credentials, path=None, id_=None):
     assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path)
-    else:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "acl"])
 
     method = "GET"
-    uri.add_query_param("acl")
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def get_attr(conninfo, credentials, path=None, id_=None):
     assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path)
-    else:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_)
-
-    method = "GET"
-    uri.add_query_param("attributes")
-    return request.rest_request(conninfo, credentials, method, unicode(uri))
-
-@request.request
-def get_walk(conninfo, credentials, path):
-    assert (path is not None)
-    path = unicode(path)
-    uri = build_fs_walk_uri(path)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "attributes"])
 
     method = "GET"
     return request.rest_request(conninfo, credentials, method, unicode(uri))
@@ -172,17 +136,12 @@ def read_directory(conninfo, credentials, page_size, path=None, id_=None):
     @param {int} id_        Directory to read, by ID
     '''
     assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        # Ensure there is one trailing slash
-        path = path.rstrip("/") + "/"
-        uri = build_fs_path_uri(path)
-    else:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_)
+
+    # Ensure there is one trailing slash
+    ref = unicode(path.rstrip('/') + '/') if path else unicode(id_)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     method = "GET"
-    uri.add_query_param("readdir")
     if page_size is not None:
         uri.add_query_param("limit", page_size)
     return request.rest_request(conninfo, credentials, method, unicode(uri))
@@ -190,12 +149,8 @@ def read_directory(conninfo, credentials, page_size, path=None, id_=None):
 @request.request
 def read_file(conninfo, credentials, file_, path=None, id_=None):
     assert (path is not None) ^ (id_ is not None)
-    if path is not None:
-        path = unicode(path)
-        uri = build_fs_path_uri(path)
-    else:
-        id_ = unicode(id_)
-        uri = build_fs_id_uri(id_)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "data"])
 
     method = "GET"
     return request.rest_request(conninfo, credentials, method, unicode(uri),
@@ -203,16 +158,12 @@ def read_file(conninfo, credentials, file_, path=None, id_=None):
 
 @request.request
 def create_file(conninfo, credentials, name, dir_path=None, dir_id=None):
-    name = unicode(name)
-    if dir_path is not None:
-        dir_path = unicode(dir_path)
-        uri = build_fs_path_uri(dir_path)
-    else:
-        dir_id = unicode(dir_id)
-        uri = build_fs_id_uri(dir_id)
+    assert (dir_path is not None) ^ (dir_id is not None)
+    ref = unicode(dir_path) if dir_path else unicode(dir_id)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     config = {
-        'name': name.rstrip("/"),
+        'name': unicode(name).rstrip("/"),
         'action': 'CREATE_FILE'
     }
 
@@ -222,16 +173,12 @@ def create_file(conninfo, credentials, name, dir_path=None, dir_id=None):
 
 @request.request
 def create_directory(conninfo, credentials, name, dir_path=None, dir_id=None):
-    name = unicode(name)
-    if dir_path is not None:
-        dir_path = unicode(dir_path)
-        uri = build_fs_path_uri(dir_path)
-    else:
-        dir_id = unicode(dir_id)
-        uri = build_fs_id_uri(dir_id)
+    assert (dir_path is not None) ^ (dir_id is not None)
+    ref = unicode(dir_path) if dir_path else unicode(dir_id)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     config = {
-        'name': name,
+        'name': unicode(name),
         'action': 'CREATE_DIRECTORY'
     }
 
@@ -242,18 +189,13 @@ def create_directory(conninfo, credentials, name, dir_path=None, dir_id=None):
 @request.request
 def create_symlink(conninfo, credentials, name, target, dir_path=None,
                    dir_id=None):
-    name = unicode(name)
-    target = unicode(target)
-    if dir_path is not None:
-        dir_path = unicode(dir_path)
-        uri = build_fs_path_uri(dir_path)
-    else:
-        dir_id = unicode(dir_id)
-        uri = build_fs_id_uri(dir_id)
+    assert (dir_path is not None) ^ (dir_id is not None)
+    ref = unicode(dir_path) if dir_path else unicode(dir_id)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     config = {
-        'name': name.rstrip("/"),
-        'old_path' : target,
+        'name': unicode(name).rstrip("/"),
+        'old_path': unicode(target),
         'action': 'CREATE_SYMLINK'
     }
 
@@ -264,18 +206,13 @@ def create_symlink(conninfo, credentials, name, target, dir_path=None,
 @request.request
 def create_link(conninfo, credentials, name, target, dir_path=None,
                 dir_id=None):
-    name = unicode(name)
-    target = unicode(target)
-    if dir_path is not None:
-        dir_path = unicode(dir_path)
-        uri = build_fs_path_uri(dir_path)
-    else:
-        dir_id = unicode(dir_id)
-        uri = build_fs_id_uri(dir_id)
+    assert (dir_path is not None) ^ (dir_id is not None)
+    ref = unicode(dir_path) if dir_path else unicode(dir_id)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     config = {
-        'name': name.rstrip("/"),
-        'old_path' : target,
+        'name': unicode(name).rstrip("/"),
+        'old_path': unicode(target),
         'action': 'CREATE_LINK'
     }
 
@@ -285,18 +222,13 @@ def create_link(conninfo, credentials, name, target, dir_path=None,
 
 @request.request
 def rename(conninfo, credentials, name, source, dir_path=None, dir_id=None):
-    name = unicode(name)
-    source = unicode(source)
-    if dir_path is not None:
-        dir_path = unicode(dir_path)
-        uri = build_fs_path_uri(dir_path)
-    else:
-        dir_id = unicode(dir_id)
-        uri = build_fs_id_uri(dir_id)
+    assert (dir_path is not None) ^ (dir_id is not None)
+    ref = unicode(dir_path) if dir_path else unicode(dir_id)
+    uri = build_files_uri([ref, "entries"]).append_slash()
 
     config = {
-        'name': name.rstrip("/"),
-        'old_path' : source,
+        'name': unicode(name).rstrip("/"),
+        'old_path': unicode(source),
         'action': 'RENAME'
     }
 
@@ -306,19 +238,18 @@ def rename(conninfo, credentials, name, source, dir_path=None, dir_id=None):
 
 @request.request
 def delete(conninfo, credentials, path):
-    path = unicode(path)
-
     method = "DELETE"
-    uri = build_fs_path_uri(path)
+    uri = build_files_uri([unicode(path)])
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def read_dir_aggregates(conninfo, credentials, path,
         recursive=False, max_entries=None, max_depth=None, order_by=None):
     method = "GET"
-    path = unicode(path)
-    path = path.rstrip("/") + "/"
-    uri = build_fs_aggregates_uri(path, recursive)
+    path = unicode(path.rstrip('/') + '/')
+
+    aggregate = "recursive-aggregates" if recursive else "aggregates"
+    uri = build_files_uri([path, aggregate]).append_slash()
 
     method = "GET"
     if max_entries is not None:
@@ -333,16 +264,16 @@ def read_dir_aggregates(conninfo, credentials, path,
 def get_file_samples(conninfo, credentials, path, count, by_value):
     method = "GET"
 
-    uri = build_fs_uri(['sample', path])
+    uri = build_files_uri([path, 'sample']).append_slash()
     uri.add_query_param('by-value', by_value)
-    uri.add_query_param('count', count)
+    uri.add_query_param('limit', count)
 
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def resolve_paths(conninfo, credentials, ids):
     method = "POST"
-    uri = "/v1/fs/resolve"
+    uri = "/v1/files/resolve"
     return request.rest_request(conninfo, credentials, method, uri, body=ids)
 
 #  _   _      _
@@ -352,91 +283,74 @@ def resolve_paths(conninfo, credentials, ids):
 # |_| |_|\___|_| .__/ \___|_|  |___/
 #              |_|
 #
-def build_fs_uri(components):
-    uri = UriBuilder(path="/v1/fs")
+def build_files_uri(components, append_slash=False):
+    uri = UriBuilder(path="/v1/files")
+
     if components:
         for component in components:
             uri.add_path_component(component)
+
+    if append_slash:
+        uri.append_slash()
+
     return uri
-
-def build_fs_file_uri(components):
-    uri = UriBuilder(path="/v1/fs/file")
-    if components:
-        for component in components:
-            uri.add_path_component(component)
-    return uri
-
-def build_fs_path_uri(path):
-    if not path.startswith('/'):
-        path = '/' + path
-    return build_fs_uri(["path", path])
-
-def build_fs_walk_uri(path):
-    if not path.startswith('/'):
-        path = '/' + path
-    return build_fs_uri(["walk", path])
-
-def build_fs_aggregates_uri(path, recursive):
-    if not path.startswith('/'):
-        path = '/' + path
-    if recursive:
-        return build_fs_uri(["recursive-aggregates", path])
-    else:
-        return build_fs_uri(["aggregates", path])
-
-def build_fs_id_uri(id_):
-    return build_fs_uri(["id", id_])
 
 # Return an iterator that reads an entire directory.  Each iteration returns a
 # page of files, which will be the specified page size or less.
+@request.request
 def read_entire_directory(conninfo, credentials, page_size=None, path=None,
                           id_=None):
     # Perform initial read_directory normally.
     result = read_directory(conninfo, credentials, page_size=page_size,
         path=path, id_=id_)
     next_uri = result.data['paging']['next']
-    yield result.data
+    yield result
 
     while next_uri != '':
         # Perform raw read_directory with paging URI.
         result = request.rest_request(conninfo, credentials, "GET", next_uri)
         next_uri = result.data['paging']['next']
-        yield result.data
+        yield result
 
 # Return an iterator that walks a file system tree depth-first and pre-order
+@request.request
 def tree_walk_preorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for res in read_entire_directory(conninfo, credentials, path=path):
-            if 'files' in res:
-                for f in res['files']:
-                    yield f
+        for result in read_entire_directory(conninfo, credentials, path=path):
+            if 'files' in result.data:
+                for f in result.data['files']:
+                    yield request.RestResponse(f, result.etag)
+
                     if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
                         for ff in call_read_dir(conninfo, credentials,
                                                 f['path']):
                             yield ff
 
-    res, _ = get_attr(conninfo, credentials, path)
-    yield res
+    result = get_attr(conninfo, credentials, path)
+    yield result
+
     for f in call_read_dir(conninfo, credentials, path):
         yield f
 
 # Return an iterator that walks a file system tree depth-first and post-order
+@request.request
 def tree_walk_postorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for res in read_entire_directory(conninfo, credentials, path=path):
-            if 'files' in res:
-                for f in res['files']:
+        for result in read_entire_directory(conninfo, credentials, path=path):
+            if 'files' in result.data:
+                for f in result.data['files']:
                     if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
                         for ff in call_read_dir(conninfo, credentials,
                                                 f['path']):
                             yield ff
-                    yield f
+                    yield request.RestResponse(f, result.etag)
 
     for f in call_read_dir(conninfo, credentials, path):
         yield f
-    res, _ = get_attr(conninfo, credentials, path)
-    yield res
+
+    result = get_attr(conninfo, credentials, path)
+    yield result

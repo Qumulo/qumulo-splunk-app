@@ -33,7 +33,6 @@ def convert_target(target):
     return convert[target.lower()]
 
 class UpgradeConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "upgrade_config"
     DESCRIPTION = "List current upgrade prepare config"
 
@@ -42,7 +41,6 @@ class UpgradeConfigCommand(qumulo.lib.opts.Subcommand):
         print upgrade.config_get(conninfo, credentials)
 
 class UpgradePrepareCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "upgrade_config_set"
     DESCRIPTION = "Prepare an upgrade using a file on fs"
 
@@ -73,7 +71,6 @@ class UpgradeError(Exception):
     pass
 
 class UpgradeStatusCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "upgrade_status"
     DESCRIPTION = "List current upgrade status"
 

@@ -13,10 +13,8 @@
 import qumulo.lib.opts
 import qumulo.lib.util
 import qumulo.rest.cluster as cluster
-import qumulo.rest.disrupt as disrupt
 
 class ListNodesCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "nodes_list"
     DESCRIPTION = "List nodes"
 
@@ -32,7 +30,6 @@ class ListNodesCommand(qumulo.lib.opts.Subcommand):
             print cluster.list_nodes(conninfo, credentials)
 
 class GetClusterConfCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "cluster_conf"
     DESCRIPTION = "Get the cluster config"
 
@@ -41,7 +38,6 @@ class GetClusterConfCommand(qumulo.lib.opts.Subcommand):
         print cluster.get_cluster_conf(conninfo, credentials)
 
 class SetClusterConfCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "set_cluster_conf"
     DESCRIPTION = "Set the cluster config"
 
@@ -56,7 +52,6 @@ class SetClusterConfCommand(qumulo.lib.opts.Subcommand):
             _args.cluster_name)
 
 class GetClusterSlotStatusCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "cluster_slots"
     DESCRIPTION = "Get the cluster disk slots status"
 
@@ -74,43 +69,46 @@ class GetClusterSlotStatusCommand(qumulo.lib.opts.Subcommand):
                 conninfo, credentials)
 
 class GetRestriperStatusCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "restriper_status"
-    DESCRIPTION = "Get restriper and data protection status"
+    DESCRIPTION = "Get restriper status"
 
     @staticmethod
     def main(conninfo, credentials, _args):
         print cluster.get_restriper_status(conninfo, credentials)
 
-class RestriperDisableCommand(qumulo.lib.opts.Subcommand):
-    NAME = "restriper_disable"
-    DESCRIPTION = "Make the restriper stop before reprotect begins"
+class GetProtectionStatusCommand(qumulo.lib.opts.Subcommand):
+    NAME = "protection_status_get"
+    DESCRIPTION = "Get cluster protection status"
 
     @staticmethod
     def main(conninfo, credentials, _args):
-        cluster.restriper_disable(conninfo, credentials, True)
+        print cluster.get_protection_status(conninfo, credentials)
 
-class RestriperEnableCommand(qumulo.lib.opts.Subcommand):
-    NAME = "restriper_enable"
-    DESCRIPTION = "Allows the restriper to complete on next quorum. " \
-        "And bounces quorum unless the do-not-bounce-quorum flag is set."
+class SetNodeIdentifyLight(qumulo.lib.opts.Subcommand):
+    NAME = "set_node_identify_light"
+    DESCRIPTION = "Turn node identification light on or off"
 
     @staticmethod
     def options(parser):
-        parser.add_argument("--do-not-bounce-quorum", action='store_true')
+        parser.add_argument("--node", help="Node ID", required=True)
+        parser.add_argument("light_state", choices=["on", "off"],
+                            help="Should light be visible")
 
     @staticmethod
     def main(conninfo, credentials, args):
-        cluster.restriper_disable(conninfo, credentials, False)
+        light_visible = args.light_state == "on"
+        print cluster.set_node_identify_light(conninfo, credentials,
+                                              args.node, light_visible)
 
-        if not args.do_not_bounce_quorum:
-            # If we have not encountered an error, then make quorum bounce
-            disrupt.rpc_glitch(conninfo, credentials, "2")
-
-class GetClusterRPCStatsCommand(qumulo.lib.opts.Subcommand):
-    NAME = "cluster_rpc_stats"
-    DESCRIPTION = "Return cluster RPC stats for debugging purposes."
+class GetNodeChassisStatus(qumulo.lib.opts.Subcommand):
+    NAME = "node_chassis_status_get"
+    DESCRIPTION = "Get the status of node chassis"
 
     @staticmethod
-    def main(conninfo, credentials, _args):
-        print cluster.get_rpc_stats(conninfo, credentials)
+    def options(parser):
+        parser.add_argument("--node", help="Node ID")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print cluster.get_node_chassis_status(conninfo, credentials,
+                                              args.node)

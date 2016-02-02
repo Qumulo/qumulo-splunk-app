@@ -131,7 +131,7 @@ class Connection(object):
             connection_kwargs['source_address'] = ('localhost', port)
 
         # US956: support for SSL updates in python 2.7.9
-        if hasattr(ssl, 'SSLContext'):
+        if hasattr(ssl, 'SSLContext') and hasattr(ssl, 'PROTOCOL_TLSv1_2'):
             connection_kwargs['context'] = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 
         return HTTPSConnectionWrapped(self.host, self.port, **connection_kwargs)

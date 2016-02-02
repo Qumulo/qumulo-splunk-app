@@ -40,7 +40,6 @@ def list_group(conninfo, credentials, group_id):
 #
 
 class ChangePasswordCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "change_password"
     DESCRIPTION = "Change your password"
 
@@ -71,7 +70,6 @@ class ChangePasswordCommand(qumulo.lib.opts.Subcommand):
         print "Your password has been changed."
 
 class SetUserPasswordCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_set_password"
     DESCRIPTION = "Set a user's password"
 
@@ -84,7 +82,7 @@ class SetUserPasswordCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        user_id = users.get_id(conninfo, credentials, args.id)
+        user_id = users.get_user_id(conninfo, credentials, args.id)
 
         if args.password is not None:
             password = args.password
@@ -97,7 +95,6 @@ class SetUserPasswordCommand(qumulo.lib.opts.Subcommand):
         print "Changed password for %s" % args.id
 
 class ListUsersCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_list_users"
     DESCRIPTION = "List all users"
 
@@ -106,7 +103,6 @@ class ListUsersCommand(qumulo.lib.opts.Subcommand):
         print users.list_users(conninfo, credentials)
 
 class AddUserCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_add_user"
     DESCRIPTION = "Add a new user"
 
@@ -129,7 +125,8 @@ class AddUserCommand(qumulo.lib.opts.Subcommand):
         elif args.password is not None:
             password = args.password
 
-        group_id = groups.get_id(conninfo, credentials, args.primary_group)
+        group_id = groups.get_group_id(
+            conninfo, credentials, args.primary_group)
 
         res = users.add_user(conninfo, credentials, args.name,
             group_id.data, args.uid)
@@ -142,7 +139,6 @@ class AddUserCommand(qumulo.lib.opts.Subcommand):
                 password)
 
 class ListUserCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_list_user"
     DESCRIPTION = "List a user"
 
@@ -153,11 +149,10 @@ class ListUserCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        user_id = users.get_id(conninfo, credentials, args.id)
+        user_id = users.get_user_id(conninfo, credentials, args.id)
         list_user(conninfo, credentials, user_id.data)
 
 class ModUserCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_mod_user"
     DESCRIPTION = "Modify a user"
 
@@ -178,7 +173,7 @@ class ModUserCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, args):
         # Get the user object
-        user_id = users.get_id(conninfo, credentials, args.id)
+        user_id = users.get_user_id(conninfo, credentials, args.id)
         user_info, etag = users.list_user(conninfo, credentials,
             user_id.data)
 
@@ -189,7 +184,7 @@ class ModUserCommand(qumulo.lib.opts.Subcommand):
 
         primary_group = user_info['primary_group']
         if args.primary_group is not None:
-            primary_group = str(groups.get_id(
+            primary_group = str(groups.get_group_id(
                 conninfo, credentials, args.primary_group).data)
 
         uid = user_info['uid']
@@ -204,14 +199,14 @@ class ModUserCommand(qumulo.lib.opts.Subcommand):
 
         # Add specified groups, ignore output
         if args.add_group:
-            group_id = groups.get_id(conninfo, credentials,
+            group_id = groups.get_group_id(conninfo, credentials,
                 args.add_group)
             groups.group_add_member(conninfo, credentials,
                 group_id.data, user_id.data)
 
         # Remove specified groups, ignore output
         if args.remove_group:
-            group_id = groups.get_id(conninfo, credentials,
+            group_id = groups.get_group_id(conninfo, credentials,
                 args.remove_group)
             groups.group_remove_member(conninfo, credentials,
                 group_id.data, user_id.data)
@@ -220,7 +215,6 @@ class ModUserCommand(qumulo.lib.opts.Subcommand):
         list_user(conninfo, credentials, user_id.data)
 
 class DeleteUserCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_delete_user"
     DESCRIPTION = "Delete a user"
 
@@ -231,7 +225,7 @@ class DeleteUserCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        user_id = users.get_id(conninfo, credentials, args.id)
+        user_id = users.get_user_id(conninfo, credentials, args.id)
         users.delete_user(conninfo, credentials, user_id.data)
         print "User was deleted."
 
@@ -249,7 +243,6 @@ class DeleteUserCommand(qumulo.lib.opts.Subcommand):
 #
 
 class ListGroupsCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_list_groups"
     DESCRIPTION = "List all groups"
 
@@ -258,7 +251,6 @@ class ListGroupsCommand(qumulo.lib.opts.Subcommand):
         print groups.list_groups(conninfo, credentials)
 
 class AddGroupCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_add_group"
     DESCRIPTION = "Add a new group"
 
@@ -275,7 +267,6 @@ class AddGroupCommand(qumulo.lib.opts.Subcommand):
             args.gid)
 
 class ListGroupCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_list_group"
     DESCRIPTION = "List a group"
 
@@ -286,11 +277,10 @@ class ListGroupCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        group_id = groups.get_id(conninfo, credentials, args.id)
+        group_id = groups.get_group_id(conninfo, credentials, args.id)
         list_group(conninfo, credentials, group_id.data)
 
 class ModGroupCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_mod_group"
     DESCRIPTION = "Modify a group"
 
@@ -305,7 +295,7 @@ class ModGroupCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, args):
         # Get the group object
-        group_id = groups.get_id(conninfo, credentials, args.id)
+        group_id = groups.get_group_id(conninfo, credentials, args.id)
         group_info, etag = groups.list_group(conninfo, credentials,
             group_id.data)
 
@@ -328,7 +318,6 @@ class ModGroupCommand(qumulo.lib.opts.Subcommand):
         list_group(conninfo, credentials, group_id.data)
 
 class DeleteGroupCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "auth_delete_group"
     DESCRIPTION = "Delete a group"
 
@@ -339,6 +328,6 @@ class DeleteGroupCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        group_id = groups.get_id(conninfo, credentials, args.id)
+        group_id = groups.get_group_id(conninfo, credentials, args.id)
         groups.delete_group(conninfo, credentials, group_id.data)
         print "Group was deleted."

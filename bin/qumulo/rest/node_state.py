@@ -15,7 +15,7 @@ import qumulo.lib.request as request
 @request.request
 def get_node_state(conninfo, credentials):
     method = "GET"
-    uri = "/v1/node-state"
+    uri = "/v1/node/state"
 
     return request.rest_request(conninfo, credentials, method, uri)
 

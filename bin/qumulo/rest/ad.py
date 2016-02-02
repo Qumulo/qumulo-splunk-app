@@ -16,14 +16,14 @@ import qumulo.lib.util as util
 @request.request
 def list_ad(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/ad-domain"
+    uri = "/v1/ad/status"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def poll_ad(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/ad-domain/monitor"
+    uri = "/v1/ad/monitor"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -32,7 +32,7 @@ def join_ad(
         conninfo, credentials, domain, username, password, ou,
         domain_netbios=None):
     method = "POST"
-    uri = "/v1/conf/ad-domain/join"
+    uri = "/v1/ad/join"
 
     if domain_netbios is None:
         domain_netbios = ""
@@ -50,7 +50,7 @@ def join_ad(
 @request.request
 def leave_ad(conninfo, credentials, domain, username, password):
     method = "POST"
-    uri = "/v1/conf/ad-domain/leave"
+    uri = "/v1/ad/leave"
 
     # XXX scott: support none for these in the api, also, don't call domain
     # assistant script in that case
@@ -70,24 +70,6 @@ def leave_ad(conninfo, credentials, domain, username, password):
 @request.request
 def cancel_ad(conninfo, credentials):
     method = "POST"
-    uri = "/v1/conf/ad-domain/cancel"
+    uri = "/v1/ad/cancel"
 
     return request.rest_request(conninfo, credentials, method, uri)
-
-@request.request
-def set_ad_machine_account(
-    conninfo, credentials, domain, account, password, salt, sid):
-
-    method = "PUT"
-    uri = "/v1/conf/ad-settings/machine_account"
-
-    req_body = {
-        "domain_name": domain,
-        "account_name": account,
-        "password": password,
-        "salt": salt,
-        "sid": sid,
-    }
-
-    return request.rest_request(
-        conninfo, credentials, method, uri, body=req_body)

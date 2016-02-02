@@ -10,21 +10,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from qumulo.rest import (abc, ad, aggregation, auth,
-    bench, block, bstores,
-    cache, cluster, config, cpu_profile,
-    debug_file, disks, disrupt, dlm, dns,
-    error_ring,
-    fail, flood, fs,
+from qumulo.rest import (
+    ad, analytics, auth,
+    cluster, config,
+    disks, dns,
+    fs,
     groups,
-    inspect,
-    kv,
-    latency, led, logging,
-    memory, mock_clock, monitoring_config,
-    network, nfs, node, node_state,
-    ping, pstore,
-    quiesce, quorum,
-    shares, shutdown, slots, smb2, stats,
-    task, time_config, trace,
+    led,
+    network, nfs, node_state,
+    shutdown, smb, support,
+    time_config,
     unconfigured_node_operations, upgrade, users,
     version)

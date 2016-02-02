@@ -8,14 +8,10 @@ from datetime import datetime
 
 
 # Import Qumulo REST libraries
-import qumulo.lib.auth
-import qumulo.lib.request
-import qumulo.rest
-
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
-EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_app/bin/"
+EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
 
 
 # Import any Eggs

@@ -26,14 +26,14 @@ FIELDS = set((
 @request.request
 def get_cluster_network_config(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/network"
+    uri = "/v1/network/settings"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def modify_cluster_network_config(conninfo, credentials, **kwargs):
     method = "PATCH"
-    uri = "/v1/conf/network"
+    uri = "/v1/network/settings"
 
     config = { }
 
@@ -53,14 +53,14 @@ def modify_cluster_network_config(conninfo, credentials, **kwargs):
 @request.request
 def list_network_status(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/network/status/"
+    uri = "/v1/network/status/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def get_network_status(conninfo, credentials, node):
     method = "GET"
-    uri = "/v1/conf/network/status/{}".format(node)
+    uri = "/v1/network/status/{}".format(node)
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -68,7 +68,7 @@ def get_network_status(conninfo, credentials, node):
 def get_static_ip_allocation(conninfo, credentials,
         try_ranges=None, try_netmask=None, try_floating_ranges=None):
     method = "GET"
-    uri = "/v1/conf/network/static-ip-allocation"
+    uri = "/v1/network/static-ip-allocation"
 
     query_params = []
 
@@ -87,6 +87,6 @@ def get_static_ip_allocation(conninfo, credentials,
 @request.request
 def get_floating_ip_allocation(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/network/floating-ip-allocation"
+    uri = "/v1/network/floating-ip-allocation"
 
     return request.rest_request(conninfo, credentials, method, uri)

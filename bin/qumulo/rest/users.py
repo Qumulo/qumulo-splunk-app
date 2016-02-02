@@ -16,7 +16,7 @@ import qumulo.lib.util as util
 @request.request
 def list_users(conninfo, credentials):
     method = "GET"
-    uri = "/v1/auth/users/"
+    uri = "/v1/users/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -24,7 +24,7 @@ def list_users(conninfo, credentials):
 @request.request
 def add_user(conninfo, credentials, name, primary_group, uid):
     method = "POST"
-    uri = "/v1/auth/users/"
+    uri = "/v1/users/"
 
     user_info = {
         'name':          util.parse_ascii(name, 'username'),
@@ -40,7 +40,7 @@ def list_user(conninfo, credentials, user_id):
     user_id = int(user_id)
 
     method = "GET"
-    uri = "/v1/auth/users/%d" % user_id
+    uri = "/v1/users/%d" % user_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -51,7 +51,7 @@ def modify_user(conninfo, credentials, user_id, name, primary_group,
     if_match = if_match if if_match is None else str(if_match)
 
     method = "PUT"
-    uri = "/v1/auth/users/%d" % user_id
+    uri = "/v1/users/%d" % user_id
 
     user_info = {
         'id':            str(user_id),
@@ -68,7 +68,7 @@ def delete_user(conninfo, credentials, user_id):
     user_id = int(user_id)
 
     method = "DELETE"
-    uri = "/v1/auth/users/%d" % user_id
+    uri = "/v1/users/%d" % user_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -77,7 +77,7 @@ def list_groups_for_user(conninfo, credentials, user_id):
     user_id = int(user_id)
 
     method = "GET"
-    uri = "/v1/auth/users/%d/groups/" % user_id
+    uri = "/v1/users/%d/groups/" % user_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -87,7 +87,7 @@ def set_user_password(conninfo, credentials, user_id, new_password):
     new_password = util.parse_ascii(new_password, 'password')
 
     method = "POST"
-    uri = "/v1/auth/users/%d/setpassword" % user_id
+    uri = "/v1/users/%d/setpassword" % user_id
     body = { 'new_password' : new_password }
 
     return request.rest_request(conninfo, credentials, method, uri, body=body)
@@ -95,7 +95,7 @@ def set_user_password(conninfo, credentials, user_id, new_password):
 # TODO This user conversion function should be a REST call, but is not yet.
 # Return a user_id from a string that contains either the id or a name
 @request.request
-def get_id(conninfo, credentials, value):
+def get_user_id(conninfo, credentials, value):
     # First, try to parse as an integer
     try:
         return request.RestResponse(int(value), 'etag')

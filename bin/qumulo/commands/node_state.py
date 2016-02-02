@@ -14,7 +14,6 @@ import qumulo.lib.opts
 import qumulo.rest.node_state as node_state
 
 class GetNodeState(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "node_state_get"
     DESCRIPTION = "Get the operational state of the node"
 

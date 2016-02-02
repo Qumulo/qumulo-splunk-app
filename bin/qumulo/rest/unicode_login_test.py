@@ -42,7 +42,8 @@ class JoinAdUnicodeStringsRestTest(unittest.TestCase, RestTest):
     def test_success_ascii(self):
         self.run_command(self.a_domain, self.a_user, self.a_password,
             self.a_ou, self.a_netbios)
-        self.assertCalledWith('/v1/conf/ad-domain/join',
+
+        self.assertCalledWith('/v1/ad/join',
             body={
                 'domain'          : self.a_domain,
                 'user'            : self.a_user,
@@ -88,7 +89,8 @@ class LeaveAdUnicodeStringsRestTest(unittest.TestCase, RestTest):
 
     def test_success_ascii(self):
         self.run_command(self.a_domain, self.a_user, self.a_password)
-        self.assertCalledWith('/v1/conf/ad-domain/leave',
+
+        self.assertCalledWith('/v1/ad/leave',
             body={
                 'domain'          : self.a_domain,
                 'user'            : self.a_user,

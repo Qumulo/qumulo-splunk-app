@@ -16,7 +16,7 @@ import qumulo.lib.obj as obj
 @request.request
 def smb_list_shares(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/shares/smb/"
+    uri = "/v1/smb/shares/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -27,7 +27,7 @@ def smb_add_share(conninfo, credentials,
                           allow_fs_path_create=False):
     method = "POST"
     allow_fs_path_create_ = "true" if allow_fs_path_create else "false"
-    uri = "/v1/conf/shares/smb/?allow-fs-path-create=%s" % allow_fs_path_create_
+    uri = "/v1/smb/shares/?allow-fs-path-create=%s" % allow_fs_path_create_
 
     share_info = {
         'share_name':         unicode(share_name),
@@ -45,7 +45,7 @@ def smb_list_share(conninfo, credentials, id_):
     id_ = unicode(id_)
 
     method = "GET"
-    uri = "/v1/conf/shares/smb/%s" % id_
+    uri = "/v1/smb/shares/%s" % id_
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -59,7 +59,7 @@ def smb_modify_share(conninfo, credentials, id_, share_name,
     if_match = if_match if if_match is None else unicode(if_match)
 
     method = "PUT"
-    uri = "/v1/conf/shares/smb/%s?allow-fs-path-create=%s" % \
+    uri = "/v1/smb/shares/%s?allow-fs-path-create=%s" % \
         (id_, allow_fs_path_create_)
 
     share_info = {
@@ -79,7 +79,7 @@ def smb_delete_share(conninfo, credentials, id_):
     id_ = unicode(id_)
 
     method = "DELETE"
-    uri = "/v1/conf/shares/smb/%s" % id_
+    uri = "/v1/smb/shares/%s" % id_
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -91,69 +91,3 @@ class NFSRestriction(obj.Object):
     def create_default(cls):
         return cls({'read_only': False, 'host_restrictions': [],
                     'user_mapping': 'NFS_MAP_NONE', 'map_to_user_id': '0'})
-
-@request.request
-def nfs_list_shares(conninfo, credentials):
-    method = "GET"
-    uri = "/v1/conf/shares/nfs/"
-
-    return request.rest_request(conninfo, credentials, method, uri)
-
-@request.request
-def nfs_add_share(conninfo, credentials, export_path, fs_path, description,
-                  restrictions, allow_fs_path_create=False):
-    method = "POST"
-    allow_fs_path_create_ = "true" if allow_fs_path_create else "false"
-    uri = "/v1/conf/shares/nfs/?allow-fs-path-create=%s" % allow_fs_path_create_
-
-    share_info = {
-        'export_path':       unicode(export_path),
-        'fs_path':           unicode(fs_path),
-        'description':       unicode(description),
-        'restrictions': [ r.dictionary() for r in restrictions ]
-    }
-
-    return request.rest_request(conninfo, credentials, method, uri,
-        body=share_info)
-
-@request.request
-def nfs_list_share(conninfo, credentials, id_):
-    id_ = unicode(id_)
-
-    method = "GET"
-    uri = "/v1/conf/shares/nfs/%s" % id_
-
-    return request.rest_request(conninfo, credentials, method, uri)
-
-@request.request
-def nfs_modify_share(conninfo, credentials, id_, export_path, fs_path,
-                     description, restrictions, allow_fs_path_create=False,
-                     if_match=None):
-    id_ = unicode(id_)
-    allow_fs_path_create_ = "true" if allow_fs_path_create else "false"
-
-    if_match = if_match if if_match is None else unicode(if_match)
-
-    method = "PUT"
-    uri = "/v1/conf/shares/nfs/%s?allow-fs-path-create=%s" % \
-        (id_, allow_fs_path_create_)
-
-    share_info = {
-        'id': id_,
-        'export_path':  unicode(export_path),
-        'fs_path':      unicode(fs_path),
-        'description':  unicode(description),
-        'restrictions': [ r.dictionary() for r in restrictions ]
-    }
-
-    return request.rest_request(conninfo, credentials, method, uri,
-        body=share_info, if_match=if_match)
-
-@request.request
-def nfs_delete_share(conninfo, credentials, id_):
-    id_ = unicode(id_)
-
-    method = "DELETE"
-    uri = "/v1/conf/shares/nfs/%s" % id_
-
-    return request.rest_request(conninfo, credentials, method, uri)

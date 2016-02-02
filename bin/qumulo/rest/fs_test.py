@@ -11,6 +11,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import collections
 import unittest
 import mock
 
@@ -22,6 +23,8 @@ from qumulo.lib.request import CONTENT_TYPE_BINARY
 
 import qinternal.check.pycheck as pycheck
 
+ReturnValue = collections.namedtuple('ReturnValue', 'data etag')
+
 class GetAttrRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.get_attr, "GET")
@@ -31,50 +34,12 @@ class GetAttrRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri)
 
     def test_success(self):
-        self.assert_success("/v1/fs/path/%2Ffoo?attributes", path="foo")
-        self.assert_success("/v1/fs/id/1?attributes", id_="1")
+        self.assert_success("/v1/files/%2Ffoo/info/attributes", path="/foo")
+        self.assert_success("/v1/files/1/info/attributes", id_="1")
 
     def test_empty_path(self):
-        self.run_command("")
-        self.assertCalledWith("/v1/fs/path/%2F?attributes")
-
-class SetAttrRestTest(unittest.TestCase, RestTest):
-    def setUp(self):
-        RestTest.setUp(self, qumulo.rest.fs.set_attr, "PUT")
-        self.mode = 'hung over'
-        self.owner = 'Jeff Daniels'
-        self.group = 'Bad Whiskey'
-        self.size = 'far too large'
-        self.modification_time = 'recent'
-        self.change_time = 'dunno'
-        self.body = {
-            'mode': self.mode,
-            'owner': self.owner,
-            'group': self.group,
-            'size': self.size,
-            'modification_time': self.modification_time,
-            'change_time': self.change_time,
-        }
-        self.if_match = 'etag'
-
-    def test_success(self):
-        self.run_command(self.mode, self.owner, self.group, self.size,
-            self.modification_time, self.change_time, "foo", None,
-            self.if_match)
-        self.assertCalledWith("/v1/fs/path/%2Ffoo?attributes",
-            body=self.body, if_match=self.if_match)
-
-    def test_success_by_id(self):
-        self.run_command(self.mode, self.owner, self.group, self.size,
-            self.modification_time, self.change_time, None, "1", self.if_match)
-        self.assertCalledWith("/v1/fs/id/1?attributes",
-            body=self.body, if_match=self.if_match)
-
-    def test_empty_path(self):
-        self.run_command(self.mode, self.owner, self.group, self.size,
-            self.modification_time, self.change_time, "", None, self.if_match)
-        self.assertCalledWith("/v1/fs/path/%2F?attributes",
-            body=self.body, if_match=self.if_match)
+        self.run_command("/")
+        self.assertCalledWith("/v1/files/%2F/info/attributes")
 
 class SetFileAttrRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -101,7 +66,7 @@ class SetFileAttrRestTest(unittest.TestCase, RestTest):
         self.run_command(self.mode, self.owner, self.group, self.size,
             self.creation_time, self.modification_time, self.change_time, "2",
             self.if_match)
-        self.assertCalledWith("/v1/fs/file/2/attributes",
+        self.assertCalledWith("/v1/files/2/info/attributes",
             body=self.body, if_match=self.if_match)
 
 ACL_QUERY = [('acl', None)]
@@ -115,12 +80,12 @@ class GetAclRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri)
 
     def test_success(self):
-        self.assert_success("/v1/fs/path/%2Ffoo?acl", path="foo")
-        self.assert_success("/v1/fs/id/1?acl", id_="1")
+        self.assert_success("/v1/files/%2Ffoo/info/acl", path="/foo")
+        self.assert_success("/v1/files/1/info/acl", id_="1")
 
     def test_empty_path(self):
-        self.run_command("")
-        self.assertCalledWith("/v1/fs/path/%2F?acl")
+        self.run_command("/")
+        self.assertCalledWith("/v1/files/%2F/info/acl")
 
 class SetAclRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -131,31 +96,35 @@ class SetAclRestTest(unittest.TestCase, RestTest):
         control = ['none', 'some', 'freak']
         body = {'control': control, 'aces': aces}
         if_match = '!'
-        self.run_command(path="foo", aces=aces, control=control,
+        self.run_command(path="/foo", aces=aces, control=control,
                          if_match=if_match)
-        self.assertCalledWith("/v1/fs/path/%2Ffoo?acl", body=body,
+        self.assertCalledWith("/v1/files/%2Ffoo/info/acl", body=body,
                               if_match=if_match)
         self.run_command(id_="1", aces=aces, control=control, if_match=if_match)
-        self.assertCalledWith("/v1/fs/id/1?acl", body=body, if_match=if_match)
+        self.assertCalledWith("/v1/files/1/info/acl", body=body,
+            if_match=if_match)
 
     def test_only_one(self):
         aces = mock.Mock()
         if_match = mock.Mock()
         control = mock.Mock()
-        self.assert_request_raises(ValueError, path="foo", aces=aces,
+        self.assert_request_raises(ValueError, path="/foo", aces=aces,
                 if_match=if_match)
 
-        self.assert_request_raises(ValueError, path="foo", control=control,
+        self.assert_request_raises(ValueError, path="/foo", control=control,
                 if_match=if_match)
 
     def test_neither(self):
         if_match = mock.Mock()
-        self.assert_request_raises(ValueError, path="foo", if_match=if_match)
+        self.assert_request_raises(ValueError, path="/foo", if_match=if_match)
 
 class CreateFileRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.create_file, "POST")
-        self.body = { 'name': 'foo', 'action': 'CREATE_FILE' }
+        self.body = {
+            'name': 'foo',
+            'action': 'CREATE_FILE'
+        }
 
     # Assert a successful request
     def assert_success(self, name, exp_uri, dir_path=None, dir_id=None):
@@ -163,21 +132,26 @@ class CreateFileRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri, body=self.body)
 
     def test_success(self):
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
 
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="bar/")
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
 
-        self.assert_success("foo", "/v1/fs/id/1", dir_id="1")
+        self.assert_success("foo", "/v1/files/1/entries/", dir_id="1")
 
     def test_corrected_name(self):
-        self.assert_success("foo/", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo/", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
 
 class CreateDirectoryRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.create_directory, "POST")
-        self.body = { 'name': 'foo', 'action': 'CREATE_DIRECTORY' }
+        self.body = {
+            'name': 'foo',
+            'action': 'CREATE_DIRECTORY'
+        }
 
     # Assert a successful request
     def assert_success(self, name, exp_uri, dir_path=None, dir_id=None):
@@ -185,20 +159,22 @@ class CreateDirectoryRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri, body=self.body)
 
     def test_success(self):
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
-
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="bar/")
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="/bar/")
-
-        self.assert_success("foo", "/v1/fs/id/1", dir_id="1")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/1/entries/", dir_id="1")
 
 class CreateSymlinkRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.create_symlink, "POST")
         self.target = 'slash bar'
-        self.body = { 'name': 'foo',
-                      'old_path': self.target,
-                      'action': 'CREATE_SYMLINK' }
+        self.body = {
+            'name': 'foo',
+            'old_path': self.target,
+            'action': 'CREATE_SYMLINK'
+        }
 
     # Assert a successful request
     def assert_success(self, name, exp_uri, dir_path=None, dir_id=None):
@@ -206,26 +182,24 @@ class CreateSymlinkRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri, body=self.body)
 
     def test_success(self):
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
-
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="bar/")
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="/bar/")
-
-        self.assert_success("foo", "/v1/fs/id/1", dir_id="1")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/1/entries/", dir_id="1")
 
     def test_corrected_name(self):
-        self.assert_success("foo/", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo/", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
 
 class CreateLinkRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.create_link, "POST")
         self.target = 'whatever'
-        self.body = { 'name': 'foo',
-                      'old_path': self.target,
-                      'action': 'CREATE_LINK' }
+        self.body = {
+            'name': 'foo',
+            'old_path': self.target,
+            'action': 'CREATE_LINK'
+        }
 
     # Assert a successful request
     def assert_success(self, name, exp_uri, dir_path=None, dir_id=None):
@@ -233,18 +207,20 @@ class CreateLinkRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri, body=self.body)
 
     def test_success(self):
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
 
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="bar/")
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
 
-        self.assert_success("foo", "/v1/fs/id/1", dir_id="1")
+        self.assert_success("foo", "/v1/files/1/entries/", dir_id="1")
 
     def test_corrected_name(self):
-        self.assert_success("foo/", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo/", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
 
 class RenameRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -258,30 +234,32 @@ class RenameRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri, body=self.body)
 
     def test_success(self):
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo", "/v1/files/%2F/entries/", dir_path="/")
 
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="bar/")
-        self.assert_success("foo", "/v1/fs/path/%2Fbar%2F", dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
+        self.assert_success("foo", "/v1/files/%2Fbar%2F/entries/",
+            dir_path="/bar/")
 
-        self.assert_success("foo", "/v1/fs/id/1", dir_id="1")
+        self.assert_success("foo", "/v1/files/1/entries/", dir_id="1")
 
     def test_corrected_name(self):
-        self.assert_success("foo/", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
-        self.assert_success("foo//", "/v1/fs/path/%2F", dir_path="/")
+        self.assert_success("foo/", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
+        self.assert_success("foo//", "/v1/files/%2F/entries/", dir_path="/")
 
 class DeleteRestTest(unittest.TestCase, RestTest):
     def setUp(self):
         RestTest.setUp(self, qumulo.rest.fs.delete, "DELETE")
 
     def test_success(self):
-        self.run_command("foo")
-        self.assertCalledWith("/v1/fs/path/%2Ffoo")
+        self.run_command("/foo")
+        self.assertCalledWith("/v1/files/%2Ffoo")
 
     def test_empty_path(self):
-        self.run_command("")
-        self.assertCalledWith("/v1/fs/path/%2F")
+        self.run_command("/")
+        self.assertCalledWith("/v1/files/%2F")
 
 class WriteFileRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -295,9 +273,9 @@ class WriteFileRestTest(unittest.TestCase, RestTest):
             request_content_type=CONTENT_TYPE_BINARY)
 
     def test_success(self):
-        self.assert_success("foo", None, "/v1/fs/path/%2Ffoo")
-        self.assert_success(None, "1", "/v1/fs/id/1")
-        self.assert_success("", None, "/v1/fs/path/%2F")
+        self.assert_success("/foo", None, "/v1/files/%2Ffoo/data")
+        self.assert_success(None, "1", "/v1/files/1/data")
+        self.assert_success("/", None, "/v1/files/%2F/data")
 
 class ReadFileRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -310,9 +288,9 @@ class ReadFileRestTest(unittest.TestCase, RestTest):
             response_content_type=CONTENT_TYPE_BINARY)
 
     def test_success(self):
-        self.assert_success("/v1/fs/path/%2Ffoo", path="foo")
-        self.assert_success("/v1/fs/path/%2F", path="")
-        self.assert_success("/v1/fs/id/1", id_="1")
+        self.assert_success("/v1/files/%2Ffoo/data", path="/foo")
+        self.assert_success("/v1/files/%2F/data", path="/")
+        self.assert_success("/v1/files/1/data", id_="1")
 
 class ReadDirRestTest(unittest.TestCase, RestTest):
     def setUp(self):
@@ -323,24 +301,24 @@ class ReadDirRestTest(unittest.TestCase, RestTest):
         self.assertCalledWith(exp_uri)
 
     def test_success(self):
-        self.assert_success("/v1/fs/path/%2Ffoo%2F?readdir&limit=10", 10,
-            path="foo")
-        self.assert_success("/v1/fs/id/1?readdir&limit=50", 50, id_="1")
+        self.assert_success("/v1/files/%2Ffoo%2F/entries/?limit=10", 10,
+            path="/foo/")
+        self.assert_success("/v1/files/1/entries/?limit=50", 50, id_="1")
 
     def test_empty_path(self):
-        self.assert_success("/v1/fs/path/%2F?readdir&limit=10", 10, path="")
+        self.assert_success("/v1/files/%2F/entries/?limit=10", 10, path="/")
 
     def test_no_page_size(self):
-        self.assert_success("/v1/fs/path/%2Ffoo%2F?readdir", None, path="foo")
+        self.assert_success("/v1/files/%2Ffoo%2F/entries/", None, path="/foo/")
 
 class ReadEntireDirectoryTest(unittest.TestCase):
     CALL_DATA = [
         {
             "child_count": 3,
             "files": [
-                { "name": "file1" },
-                { "name": "file2" },
-                { "name": "file3" },
+                {"name": "file1"},
+                {"name": "file2"},
+                {"name": "file3"},
             ],
             "id": 2,
             "paging": {
@@ -352,9 +330,9 @@ class ReadEntireDirectoryTest(unittest.TestCase):
         {
             "child_count": 3,
             "files": [
-                { "name": "file4" },
-                { "name": "file5" },
-                { "name": "file6" },
+                {"name": "file4"},
+                {"name": "file5"},
+                {"name": "file6"},
             ],
             "id": 2,
             "paging": {
@@ -366,8 +344,8 @@ class ReadEntireDirectoryTest(unittest.TestCase):
         {
             "child_count": 2,
             "files": [
-                { "name": "file7" },
-                { "name": "file8" },
+                {"name": "file7"},
+                {"name": "file8"},
             ],
             "id": 2,
             "paging": {
@@ -420,7 +398,7 @@ class ReadEntireDirectoryTest(unittest.TestCase):
         self.expected_uri = call_data['paging']['next']
 
         # Return the data in a response object
-        return mock.MagicMock(data=call_data)
+        return ReturnValue(data=call_data, etag='etag')
 
     def run_generator(self, expected_initial_uri, **kwargs):
         # Set the initial URI
@@ -428,7 +406,7 @@ class ReadEntireDirectoryTest(unittest.TestCase):
 
         # Read the directory, gathering the filenames as we iterate
         file_names = []
-        for data in self.func(self.conninfo, self.credentials, **kwargs):
+        for data, _etag in self.func(self.conninfo, self.credentials, **kwargs):
             for file_item in data['files']:
                 file_names.append(file_item['name'])
 
@@ -437,17 +415,17 @@ class ReadEntireDirectoryTest(unittest.TestCase):
         self.assertEqual(file_names, self.ALL_FILE_NAMES)
 
     def test_path(self):
-        self.run_generator("/v1/fs/path/%2F?readdir", path="/")
+        self.run_generator("/v1/files/%2F/entries/", path="/")
 
     def test_path_with_page_size(self):
         self.run_generator(
-            "/v1/fs/path/%2F?readdir&limit=10", page_size=10, path="/")
+            "/v1/files/%2F/entries/?limit=10", page_size=10, path="/")
 
     def test_id(self):
-        self.run_generator("/v1/fs/id/2?readdir", id_=2)
+        self.run_generator("/v1/files/2/entries/", id_=2)
 
     def test_id_and_page_size(self):
-        self.run_generator("/v1/fs/id/2?readdir&limit=10", id_=2, page_size=10)
+        self.run_generator("/v1/files/2/entries/?limit=10", id_=2, page_size=10)
 
 if __name__ == '__main__':
     pycheck.main()

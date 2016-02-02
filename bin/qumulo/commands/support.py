@@ -14,19 +14,17 @@ import os
 
 import qumulo.lib.opts
 import qumulo.lib.util
-import qumulo.rest.monitoring_config as monitoring_config
+import qumulo.rest.support as support
 
 class GetMonitoringConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "monitoring_conf"
     DESCRIPTION = "Get monitoring configuration."
 
     @staticmethod
     def main(conninfo, credentials, _args):
-        print monitoring_config.get_config(conninfo, credentials)
+        print support.get_config(conninfo, credentials)
 
 class SetMonitoringConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "set_monitoring_conf"
     DESCRIPTION = "Update monitoring configuration."
 
@@ -48,6 +46,8 @@ class SetMonitoringConfigCommand(qumulo.lib.opts.Subcommand):
             help="Optional S3 proxy host.")
         parser.add_argument("--s3-proxy-port", type=int,
             help="Optional S3 proxy port.")
+        parser.add_argument("--s3-proxy-disable-https", action='store_true',
+            default=False, help="Optional S3 proxy disable HTTPS.")
         parser.add_argument("--period", type=int,
             help="Monitoring poll interval in seconds.")
         parser.add_argument("--vpn-host",
@@ -58,8 +58,8 @@ class SetMonitoringConfigCommand(qumulo.lib.opts.Subcommand):
         config = {}
 
         for field in ['enabled', 'mq_host', 'mq_port',
-                's3_proxy_host', 's3_proxy_port', 'period',
-                'vpn_host', 'vpn_enabled']:
+                's3_proxy_host', 's3_proxy_port', 's3_proxy_disable_https',
+                'period', 'vpn_host', 'vpn_enabled']:
             value = getattr(args, field)
             if value is not None:
                 config[field] = value
@@ -67,28 +67,17 @@ class SetMonitoringConfigCommand(qumulo.lib.opts.Subcommand):
         if not config:
             raise ValueError('No options supplied')
 
-        print monitoring_config.set_config(conninfo, credentials, **config)
-
-class GetMonitoringStatus(qumulo.lib.opts.Subcommand):
-    VISIBLE = False
-    NAME = "monitoring_status_get"
-    DESCRIPTION = "Get current monitoring status."
-
-    @staticmethod
-    def main(conninfo, credentials, _args):
-        print monitoring_config.get_monitoring_status(conninfo, credentials)
+        print support.set_config(conninfo, credentials, **config)
 
 class GetVpnKeysCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "get_vpn_keys"
     DESCRIPTION = "Get VPN keys stored in the cluster."
 
     @staticmethod
     def main(conninfo, credentials, _args):
-        print monitoring_config.get_vpn_keys(conninfo, credentials)
+        print support.get_vpn_keys(conninfo, credentials)
 
 class InstallVpnKeysCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "install_vpn_keys"
     DESCRIPTION = "Install VPN keys."
 
@@ -116,4 +105,4 @@ class InstallVpnKeysCommand(qumulo.lib.opts.Subcommand):
 
         vpn_keys = InstallVpnKeysCommand.load_vpn_keys(directory)
 
-        monitoring_config.install_vpn_keys(conninfo, credentials, vpn_keys)
+        support.install_vpn_keys(conninfo, credentials, vpn_keys)

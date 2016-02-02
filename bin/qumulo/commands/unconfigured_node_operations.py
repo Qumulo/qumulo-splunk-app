@@ -14,7 +14,6 @@ import qumulo.lib.opts
 import qumulo.rest.unconfigured_node_operations as node_operations
 
 class UnconfiguredCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "unconfigured"
     DESCRIPTION = "Is the node unconfigured?"
 
@@ -24,7 +23,6 @@ class UnconfiguredCommand(qumulo.lib.opts.Subcommand):
             conninfo, credentials)
 
 class ListUnconfiguredNodesCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "unconfigured_nodes_list"
     DESCRIPTION = "Get the list of unconfigured nodes"
 
@@ -33,39 +31,7 @@ class ListUnconfiguredNodesCommand(qumulo.lib.opts.Subcommand):
         print node_operations.list_unconfigured_nodes(
             conninfo, credentials)
 
-class CreateCluster(qumulo.lib.opts.Subcommand):
-    NAME = "cluster_create"
-    DESCRIPTION = "Creates a Qumulo Cluster"
-
-    @staticmethod
-    def options(parser):
-        parser.add_argument("--cluster-name", help="Cluster Name",
-                            required=True)
-        parser.add_argument("--admin-password",
-                            help="Administrator Pasword", required=True)
-        parser.add_argument("--node-uuids", help="Cluster node uuid",
-                            action="append", required=True)
-        parser.add_argument("--require-full-quorum",
-                            help="Disallow N-1 quorums", action="store_true",
-                            default=None)
-        parser.add_argument("--erasure-coded", action="store_true",
-            help="Not for production use under any circumstances!")
-
-    @staticmethod
-    def main(conninfo, credentials, args):
-        extra_options = {}
-        if (args.require_full_quorum is not None):
-            extra_options['require_full_quorum'] = True
-        if args.erasure_coded:
-            extra_options['protection_system_type'] = (
-                'PROTECTION_SYSTEM_TYPE_EC')
-
-        print node_operations.create_cluster(
-            conninfo, credentials, args.cluster_name, args.admin_password,
-            args.node_uuids, extra_options)
-
 class AddNode(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "add_nodes"
     DESCRIPTION = "Add unconfigured nodes to a Qumulo Cluster"
 
@@ -74,9 +40,14 @@ class AddNode(qumulo.lib.opts.Subcommand):
         parser.add_argument("--node-uuids",
                             help="Unconfigured node uuids to add",
                             action="append",
-                            required=True)
+                            required=True, nargs="+")
 
     @staticmethod
     def main(conninfo, credentials, args):
+        # For backward compatibility, we support multiple instances of
+        # --node-uuids to append but we also would like to allow multiple node
+        # uuids give to each instance.  Flatten resulting list of lists.
+        args.node_uuids = [x for sublist in args.node_uuids for x in sublist]
+
         print node_operations.add_node(conninfo, credentials,
             args.node_uuids)

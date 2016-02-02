@@ -16,7 +16,7 @@ import qumulo.lib.util as util
 @request.request
 def list_groups(conninfo, credentials):
     method = "GET"
-    uri = "/v1/auth/groups/"
+    uri = "/v1/groups/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -25,7 +25,7 @@ def add_group(conninfo, credentials, name, gid):
     gid = gid if gid is None else str(gid)
 
     method = "POST"
-    uri = "/v1/auth/groups/"
+    uri = "/v1/groups/"
 
     group_info = {
         'name': util.parse_ascii(name, 'group name'),
@@ -40,7 +40,7 @@ def list_group(conninfo, credentials, group_id):
     group_id = int(group_id)
 
     method = "GET"
-    uri = "/v1/auth/groups/%d" % group_id
+    uri = "/v1/groups/%d" % group_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -52,7 +52,7 @@ def modify_group(conninfo, credentials, group_id, name, gid, if_match=None):
     if_match = if_match if if_match is None else str(if_match)
 
     method = "PUT"
-    uri = "/v1/auth/groups/%d" % group_id
+    uri = "/v1/groups/%d" % group_id
 
     group_info = {
         'id':   str(group_id),
@@ -68,7 +68,7 @@ def delete_group(conninfo, credentials, group_id):
     group_id = int(group_id)
 
     method = "DELETE"
-    uri = "/v1/auth/groups/%d" % group_id
+    uri = "/v1/groups/%d" % group_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -77,7 +77,7 @@ def group_get_members(conninfo, credentials, group_id):
     group_id = int(group_id)
 
     method = "GET"
-    uri = "/v1/auth/groups/%d/members/" % group_id
+    uri = "/v1/groups/%d/members/" % group_id
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -87,7 +87,7 @@ def group_add_member(conninfo, credentials, group_id, member_id):
     member_id = member_id if member_id is None else str(member_id)
 
     method = "POST"
-    uri = "/v1/auth/groups/%d/members/" % group_id
+    uri = "/v1/groups/%d/members/" % group_id
     body = { 'member_id' : member_id if member_id is not None else '' }
 
     return request.rest_request(conninfo, credentials, method, uri, body=body)
@@ -98,14 +98,14 @@ def group_remove_member(conninfo, credentials, group_id, member_id):
     member_id = int(member_id)
 
     method = "DELETE"
-    uri = "/v1/auth/groups/%d/members/%d" % (group_id, member_id)
+    uri = "/v1/groups/%d/members/%d" % (group_id, member_id)
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 # TODO This group conversion function should be a REST call, but is not yet.
 # Return a group_id from a string that contains either the id or a name
 @request.request
-def get_id(conninfo, credentials, value):
+def get_group_id(conninfo, credentials, value):
     # First, try to parse as an integer
     try:
         return request.RestResponse(int(value), 'etag')

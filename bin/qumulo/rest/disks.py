@@ -27,17 +27,3 @@ def set_error_threshold(conninfo, credentials, threshold):
     uri = str(UriBuilder(path="/v1/debug/disks/set_error_threshold"))
 
     return request.rest_request(conninfo, credentials, method, uri, body=body)
-
-@request.request
-def disks_counters_get(conninfo, credentials):
-    method = "GET"
-    uri = "/v1/debug/disks/counters"
-
-    return request.rest_request(conninfo, credentials, method, uri)
-
-@request.request
-def rescan_disks(conninfo, credentials):
-    method = "POST"
-    uri = "/v1/debug/rescan_disks/force"
-
-    return request.rest_request(conninfo, credentials, method, uri)

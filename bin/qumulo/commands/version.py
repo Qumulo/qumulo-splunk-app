@@ -14,7 +14,6 @@ import qumulo.lib.opts
 from qumulo.rest.version import version
 
 class VersionCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "version"
     DESCRIPTION = "Print version information"
 

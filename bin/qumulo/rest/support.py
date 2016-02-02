@@ -15,37 +15,32 @@ import qumulo.lib.request as request
 @request.request
 def get_config(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/monitoring"
+    uri = "/v1/support/settings"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 # pylint: disable=unused-argument
 @request.request
 def set_config(conninfo, credentials, enabled=None, mq_host=None, mq_port=None,
-               s3_proxy_host=None, s3_proxy_port=None, period=None,
+               s3_proxy_host=None, s3_proxy_port=None,
+               s3_proxy_disable_https=None, period=None,
                vpn_host=None, vpn_enabled=None):
     method = "PATCH"
-    uri = "/v1/conf/monitoring"
+    uri = "/v1/support/settings"
 
     config = {}
     for field in ['enabled', 'mq_host', 'mq_port', 's3_proxy_host',
-                  's3_proxy_port', 'period', 'vpn_host', 'vpn_enabled']:
+                  's3_proxy_port', 's3_proxy_disable_https', 'period',
+                  'vpn_host', 'vpn_enabled']:
         if locals().get(field) is not None:
             config[field] = locals().get(field)
 
     return request.rest_request(conninfo, credentials, method, uri, body=config)
 
 @request.request
-def get_monitoring_status(conninfo, credentials):
-    method = "GET"
-    uri = "/v1/conf/monitoring/status/"
-
-    return request.rest_request(conninfo, credentials, method, uri)
-
-@request.request
 def put_local_monitoring_status(conninfo, credentials, status):
     method = "PUT"
-    uri = "/v1/conf/monitoring/status/local"
+    uri = "/v1/support/status/local"
 
     return request.rest_request(conninfo, credentials, method, uri,
         body=status)
@@ -53,14 +48,14 @@ def put_local_monitoring_status(conninfo, credentials, status):
 @request.request
 def get_vpn_keys(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/vpn-keys"
+    uri = "/v1/support/vpn-keys"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def install_vpn_keys(conninfo, credentials, vpn_keys):
     method = "PUT"
-    uri = "/v1/conf/vpn-keys"
+    uri = "/v1/support/vpn-keys"
 
     return request.rest_request(conninfo, credentials, method, uri,
         body=vpn_keys)

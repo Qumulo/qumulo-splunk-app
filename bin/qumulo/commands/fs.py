@@ -36,7 +36,6 @@ def all_elements_none(iterable):
     return True
 
 class GetStatsCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_get_stats"
     DESCRIPTION = "Get file system statistics"
 
@@ -44,80 +43,7 @@ class GetStatsCommand(qumulo.lib.opts.Subcommand):
     def main(conninfo, credentials, _args):
         print fs.read_fs_stats(conninfo, credentials)
 
-class GetAttrCommand(qumulo.lib.opts.Subcommand):
-    NAME = "fs_get_attr"
-    DESCRIPTION = "Get file attributes (deprecated)"
-
-    @staticmethod
-    def options(parser):
-        parser.add_argument("--path", help="Path to file", type=str)
-        parser.add_argument("--id", help="File id", type=str)
-
-    @staticmethod
-    def main(conninfo, credentials, args):
-        if args.id and args.path:
-            raise ValueError("--path conflicts with --id")
-        elif not args.id and not args.path:
-            raise ValueError("Must specify --path or --id")
-
-        print fs.get_attr(conninfo, credentials, args.path, args.id)
-
-class SetAttrCommand(qumulo.lib.opts.Subcommand):
-    NAME = "fs_set_attr"
-    DESCRIPTION = "Set file attributes (deprecated)"
-
-    @staticmethod
-    def options(parser):
-        parser.add_argument("--path", help="Path to file", type=str)
-        parser.add_argument("--id", help="File id", type=str)
-        parser.add_argument("--mode", type=str,
-                            help="Posix-style file mode (octal)")
-        parser.add_argument("--owner", help="File owner", type=str)
-        parser.add_argument("--group", help="File group", type=str)
-        parser.add_argument("--size", help="File size", type=str)
-        parser.add_argument("--modification-time", type=str,
-                            help='File modification time (as RFC 3339 string)')
-        parser.add_argument("--change-time", type=str,
-                            help='File change time (as RFC 3339 string)')
-
-    @staticmethod
-    def main(conninfo, credentials, args):
-        if args.id and args.path:
-            raise ValueError("--path conflicts with --id")
-        elif not args.id and not args.path:
-            raise ValueError("Must specify --path or --id")
-        if all_elements_none([args.mode, args.owner, args.group, args.size,
-                              args.modification_time, args.change_time]):
-            raise ValueError("Must specify at least one option to change.")
-
-        # Get current attributes
-        if args.path:
-            attrs, etag = fs.get_attr(conninfo, credentials, args.path)
-        elif args.id:
-            attrs, etag = fs.get_attr(conninfo, credentials, None,
-                                              args.id)
-
-        # Update current attributes based on passed in arguments
-        if args.mode is not None:
-            attrs['mode'] = args.mode
-        if args.owner is not None:
-            attrs['owner'] = args.owner
-        if args.group is not None:
-            attrs['group'] = args.group
-        if args.size is not None:
-            attrs['size'] = args.size
-        if args.modification_time is not None:
-            attrs['modification_time'] = args.modification_time
-        if args.change_time is not None:
-            attrs['change_time'] = args.change_time
-
-        print fs.set_attr(conninfo, credentials,
-                attrs['mode'], attrs['owner'], attrs['group'], attrs['size'],
-                attrs['modification_time'], attrs['change_time'],
-                args.path, args.id, etag)
-
 class GetFileAttrCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_file_get_attr"
     DESCRIPTION = "Get file attributes"
 
@@ -130,7 +56,6 @@ class GetFileAttrCommand(qumulo.lib.opts.Subcommand):
         print fs.get_file_attr(conninfo, credentials, args.id)
 
 class SetFileAttrCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_file_set_attr"
     DESCRIPTION = "Set file attributes"
 
@@ -162,7 +87,6 @@ class SetFileAttrCommand(qumulo.lib.opts.Subcommand):
                 args.id)
 
 class GetAclCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_get_acl"
     DESCRIPTION = "Get file ACL"
 
@@ -182,7 +106,6 @@ class GetAclCommand(qumulo.lib.opts.Subcommand):
             args.id)
 
 class SetAclCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_set_acl"
     DESCRIPTION = "Set file ACL"
 
@@ -209,8 +132,9 @@ class SetAclCommand(qumulo.lib.opts.Subcommand):
             contents = f.read()
             try:
                 acl_contents = json.loads(contents)
-                acl_control = acl_contents.get("control")
-                acl_aces = acl_contents.get("aces")
+                acl = acl_contents.get("acl")
+                acl_control = acl.get("control")
+                acl_aces = acl.get("aces")
             except ValueError, e:
                 raise ValueError("Error parsing ACL data: %s\n" % str(e))
 
@@ -220,7 +144,6 @@ class SetAclCommand(qumulo.lib.opts.Subcommand):
                 if_match=etag)
 
 class CreateFileCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_create_file"
     DESCRIPTION = "Create a new file"
 
@@ -241,7 +164,6 @@ class CreateFileCommand(qumulo.lib.opts.Subcommand):
             dir_path=args.path, dir_id=args.id)
 
 class CreateDirectoryCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_create_dir"
     DESCRIPTION = "Create a new directory"
 
@@ -262,7 +184,6 @@ class CreateDirectoryCommand(qumulo.lib.opts.Subcommand):
             dir_path=args.path, dir_id=args.id)
 
 class CreateSymlinkCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_create_symlink"
     DESCRIPTION = "Create a new symbolic link"
 
@@ -284,7 +205,6 @@ class CreateSymlinkCommand(qumulo.lib.opts.Subcommand):
             args.target, dir_path=args.path, dir_id=args.id)
 
 class CreateLinkCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_create_link"
     DESCRIPTION = "Create a new link"
 
@@ -306,7 +226,6 @@ class CreateLinkCommand(qumulo.lib.opts.Subcommand):
             args.target, dir_path=args.path, dir_id=args.id)
 
 class RenameCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_rename"
     DESCRIPTION = "Rename a file system object"
 
@@ -328,7 +247,6 @@ class RenameCommand(qumulo.lib.opts.Subcommand):
             args.source, dir_path=args.path, dir_id=args.id)
 
 class DeleteCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_delete"
     DESCRIPTION = "Delete a file system object"
 
@@ -342,7 +260,6 @@ class DeleteCommand(qumulo.lib.opts.Subcommand):
         print "File system object was deleted."
 
 class WriteFileCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_write"
     DESCRIPTION = "Write a file"
 
@@ -388,7 +305,6 @@ class WriteFileCommand(qumulo.lib.opts.Subcommand):
             args.path, args.id, etag)
 
 class ReadFileCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_read"
     DESCRIPTION = "Read a file"
 
@@ -428,7 +344,6 @@ class ReadFileCommand(qumulo.lib.opts.Subcommand):
         # Print nothing on success (File may be output into stdout)
 
 class ReadDirectoryCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_read_dir"
     DESCRIPTION = "Read directory"
 
@@ -458,7 +373,6 @@ class ReadDirectoryCommand(qumulo.lib.opts.Subcommand):
             next_uri = json.loads(str(page))["paging"]["next"]
 
 class ReadDirectoryCapacityCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_read_dir_aggregates"
     DESCRIPTION = "Read directory aggregation entries"
 
@@ -481,7 +395,6 @@ class ReadDirectoryCapacityCommand(qumulo.lib.opts.Subcommand):
                 args.recursive, args.max_entries, args.max_depth, args.order_by)
 
 class TreeWalkCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_walk_tree"
     DESCRIPTION = "Walk file system tree"
 
@@ -492,30 +405,11 @@ class TreeWalkCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        for f in fs.tree_walk_preorder(conninfo, credentials,
-                args.path):
+        for f, _etag in fs.tree_walk_preorder(conninfo, credentials, args.path):
             print '%s sz=%s owner=%s group=%s' % (
                 f['path'], f['size'], f['owner'], f['group'])
 
-class GetWalkCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
-    NAME = "fs_walk"
-    DESCRIPTION = "Walk file system path with 1 REST API call"
-
-    @staticmethod
-    def options(parser):
-        parser.add_argument("--path", help="Path to file", type=str,
-                            required=True)
-
-    @staticmethod
-    def main(conninfo, credentials, args):
-        if not args.path:
-            raise ValueError("Must specify --path")
-
-        print fs.get_walk(conninfo, credentials, args.path)
-
 class TreeDeleteCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_delete_tree"
     DESCRIPTION = "Walk file system tree and delete"
 
@@ -526,13 +420,12 @@ class TreeDeleteCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        for f in fs.tree_walk_postorder(conninfo, credentials,
-                args.path):
+        for f, _etag in fs.tree_walk_postorder(
+                conninfo, credentials, args.path):
             fs.delete(conninfo, credentials, f['path'])
         print "Tree delete was successful."
 
 class GetFileSamplesCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_file_samples"
     DESCRIPTION = "Get a number of sample files from the file system"
 
@@ -550,7 +443,6 @@ class GetFileSamplesCommand(qumulo.lib.opts.Subcommand):
                                   args.sample_by)
 
 class ResolvePathsCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "fs_resolve_paths"
     DESCRIPTION = "Resolve file IDs to paths"
 

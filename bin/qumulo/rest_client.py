@@ -26,19 +26,62 @@ along with an etag field. (Nobody is returning an etag field.)
 '''
 
 import functools
-import types
+import itertools
 import logging
 import time
+import types
 
 from qumulo.lib.auth import Credentials
 
-import qumulo.rest
-
 import qumulo.lib.request as request
-
 
 log = logging.getLogger(__name__)
 log.setLevel(level=logging.INFO)
+
+def _wrap_rest_request(request_method):
+    '''
+    Wrap a function that begins with the two parameters conninfo and credentials
+    returning a function suitable for use as a method on a rest module class.
+    '''
+    @functools.wraps(request_method)
+    def wrapper(self, *args, **kwargs):
+        with_etag = kwargs.pop('with_etag', False)
+
+        # If the user asked for us to include the etag, they will get it;
+        # otherwise, it's more useful to just return the decoded JSON response.
+        def etag_stripper(response):
+            if not (hasattr(response, 'data') and hasattr(response, 'etag')):
+                return itertools.imap(etag_stripper, response)
+
+            if with_etag:
+                return response
+            else:
+                return response.data
+
+        start_time = time.time() * 1000
+        params = []
+        if args:
+            params += [unicode(repr(arg)) for arg in args]
+
+        if kwargs:
+            params += [u'%s=%s' % r for r in kwargs.iteritems()]
+
+        method_full_name = u'{}.{}'.format(request_method.__module__,
+            request_method.__name__)
+
+        log.debug(u'Calling {}:{}: {}({})'.format(
+            self.client.conninfo.host, self.client.conninfo.port,
+            method_full_name, u', '.join(params)))
+
+        response = request_method(
+            self.client.conninfo, self.client.credentials, *args, **kwargs)
+
+        log.debug('{0} response: OK ({1:.2f}ms)'.format(
+            method_full_name, (time.time() * 1000) - start_time))
+
+        return etag_stripper(response)
+
+    return wrapper
 
 class RestClient(object):
     '''
@@ -51,6 +94,7 @@ class RestClient(object):
 
     def __init__(self, address, port, credentials=None, timeout=None):
         self.conninfo = request.Connection(address, port, timeout=timeout)
+        self.client = self  # for request, make this class act like a RestModule
         self.credentials = credentials
         self.timeout = timeout
 
@@ -74,6 +118,9 @@ class RestClient(object):
     def chunk_size(self, new_value):
         self.conninfo.chunk_size = new_value
 
+    # Use the real wrapper for the base rest_request
+    request = _wrap_rest_request(request.rest_request)
+
     def login(self, username, password):
         response = self.auth.login(username, password)
         self.credentials = Credentials(response['issue'],
@@ -92,46 +139,7 @@ class RestClient(object):
         self.conninfo = request.Connection(address, port, chunked, chunk_size,
             timeout=self.timeout)
 
-def _wrap_rest_request(request_method):
-    '''
-    Wrap a function that begins with the two parameters conninfo and credentials
-    returning a function suitable for use as a method on a rest module class.
-    '''
-    @functools.wraps(request_method)
-    def wrapper(self, *args, **kwargs):
-        with_etag = kwargs.pop('with_etag', False)
-
-        start_time = time.time() * 1000
-        params = []
-        if args:
-            params += [unicode(repr(arg)) for arg in args]
-
-        if kwargs:
-            params += [u'%s=%s' % r for r in kwargs.iteritems()]
-
-        method_full_name = u'{}.{}'.format(request_method.__module__,
-            request_method.__name__)
-
-        log.debug(u'Calling {}:{}: {}({})'.format(
-            self.client.conninfo.host, self.client.conninfo.port,
-            method_full_name, u', '.join(params)))
-
-        response_tuple = request_method(
-            self.client.conninfo, self.client.credentials, *args, **kwargs)
-
-        log.debug('{0} response: OK ({1:.2f}ms)'.format(
-            method_full_name, (time.time() * 1000) - start_time))
-
-        # If the user asked for us to include the etag, they will get it;
-        # otherwise, it's more useful to just return the decoded JSON response.
-        if with_etag:
-            return response_tuple
-        else:
-            return response_tuple.data
-
-    return wrapper
-
-def _wrap_rest_module(module):
+def _wrap_rest_module(module, existing_property):
     '''
     Given a module, return a property that mimics it.
 
@@ -147,20 +155,33 @@ def _wrap_rest_module(module):
         def __init__(self, client):
             self.client = client
 
+    if existing_property is None:
+        wrapped_class = RestModule
+    else:
+        wrapped_class = existing_property.fget  # get the existing class
+
     for name, method in vars(module).iteritems():
         if callable(method) and getattr(method, 'request', False):
-            setattr(RestModule, name, _wrap_rest_request(method))
+            setattr(wrapped_class, name, _wrap_rest_request(method))
 
-    return property(RestModule)
+    return property(wrapped_class)
 
 def _wrap_all_rest_modules(root, cls):
     '''
     Wrap all rest modules loaded in the provided root module, adding a property
-    to the RestClient type for each.
+    to the RestClient type for each. If a property already exists, it will not
+    be overwritten.
+
+    This allows the private modules to dominate the public ones.
     '''
     for name, module in vars(root).iteritems():
         if isinstance(module, types.ModuleType):
-            setattr(cls, name, _wrap_rest_module(module))
+            existing_property = getattr(cls, name, None)
+            setattr(cls, name, _wrap_rest_module(module, existing_property))
 
-# Finish defining the RestClient type.
+
+# Pull in all the REST client modules and methods
+import qumulo.rest
+
+# Wrap them all.
 _wrap_all_rest_modules(qumulo.rest, RestClient)

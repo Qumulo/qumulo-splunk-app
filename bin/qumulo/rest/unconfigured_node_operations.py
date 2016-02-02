@@ -27,28 +27,9 @@ def list_unconfigured_nodes(conninfo, credentials):
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
-def create_cluster(conninfo, credentials, cluster_name,
-                   admin_password, node_uuids, options=None):
-    method = "POST"
-    uri = "/v1/unconfigured/create-cluster"
-
-    cluster_create_request = {
-        'eula_accepted': True,
-        'cluster_name': str(cluster_name),
-        'node_uuids': list(node_uuids),
-        'admin_password':  str(admin_password)
-    }
-
-    if options:
-        cluster_create_request['test_cluster_creation_options'] = options
-
-    return request.rest_request(conninfo, credentials, method, uri,
-                                body=cluster_create_request)
-
-@request.request
 def add_node(conninfo, credentials, node_uuids):
     method = "POST"
-    uri = "/v1/cluster/add-nodes"
+    uri = "/v1/cluster/nodes/"
 
     req = {
         'node_uuids':        list(node_uuids)

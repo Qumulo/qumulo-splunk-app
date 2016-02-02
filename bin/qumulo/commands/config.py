@@ -15,7 +15,6 @@ import qumulo.lib.opts
 import qumulo.rest.config as config
 
 class ClusterConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "cluster_config_get"
     DESCRIPTION = "Returns detailed information about cluster config"
 
@@ -24,7 +23,6 @@ class ClusterConfigCommand(qumulo.lib.opts.Subcommand):
         print config.cluster_config_get(conninfo, credentials)
 
 class SystemConfigCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "system_config_get"
     DESCRIPTION = "Returns detailed information about the system config " + \
         "on this specific node"

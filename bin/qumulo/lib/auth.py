@@ -27,17 +27,6 @@ CREDENTIALS_FILENAME = ".qfsd_cred"
 CONTENT_TYPE_BINARY = "application/octet-stream"
 CREDENTIALS_VERSION = 1
 
-__real_time_func__ = time.time
-
-def mock_clock(t):
-    "Sets 'current time' to t for time.time()"
-    t = float(t)
-    time.time = lambda : t
-
-def unmock_clock():
-    "Restore normal time.time()"
-    time.time = __real_time_func__
-
 def encode_nonce(s):
     "Use web-safe base64 encoding without padding for simple nonce string"
     return base64.urlsafe_b64encode(s).strip("=")

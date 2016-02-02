@@ -54,7 +54,11 @@ class UriBuilder(object):
         # Completely URI encode the component, even the '/' characters
         self._path = "%s/%s" % (self._path, urllib.quote(str(component), ''))
         if append_slash:
-            self._path += '/'
+            self.append_slash()
+        return self
+
+    def append_slash(self):
+        self._path += '/'
         return self
 
     def add_query_param(self, name, value=None):

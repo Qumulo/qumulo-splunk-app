@@ -15,28 +15,28 @@ import qumulo.lib.request as request
 @request.request
 def list_nodes(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/cluster/nodes/"
+    uri = "/v1/cluster/nodes/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def list_node(conninfo, credentials, node):
     method = "GET"
-    uri = "/v1/conf/cluster/nodes/{}".format(node)
+    uri = "/v1/cluster/nodes/{}".format(node)
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def get_cluster_conf(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/cluster"
+    uri = "/v1/cluster/settings"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def put_cluster_conf(conninfo, credentials, cluster_name):
     method = "PUT"
-    uri = "/v1/conf/cluster"
+    uri = "/v1/cluster/settings"
 
     config = {
         'cluster_name': str(cluster_name)
@@ -48,39 +48,48 @@ def put_cluster_conf(conninfo, credentials, cluster_name):
 @request.request
 def get_cluster_slots_status(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/cluster/slots/"
+    uri = "/v1/cluster/slots/"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def get_cluster_slot_status(conninfo, credentials, slot):
     method = "GET"
-    uri = "/v1/conf/cluster/slots/{}".format(slot)
+    uri = "/v1/cluster/slots/{}".format(slot)
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def get_restriper_status(conninfo, credentials):
     method = "GET"
-    uri = "/v1/cluster/restriper-status"
+    uri = "/v1/cluster/restriper/status"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
-def restriper_disable(conninfo, credentials, disabled):
-    method = "POST"
-    uri = "/v1/cluster/restriper-disable"
+def get_protection_status(conninfo, credentials):
+    method = "GET"
+    uri = "/v1/cluster/protection/status"
 
-    config = {
-        'disabled' : bool(disabled)
-    }
-
-    return request.rest_request(conninfo, credentials, method, uri,
-        body=config)
+    return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
-def get_rpc_stats(conninfo, credentials):
+def set_node_identify_light(conninfo, credentials, node, light_visible):
+    method = "POST"
+    uri = "/v1/cluster/nodes/{}/identify".format(node)
+
+    body = {'light_visible': light_visible}
+
+    return request.rest_request(conninfo, credentials, method, uri,
+                                body=body)
+
+@request.request
+def get_node_chassis_status(conninfo, credentials, node=None):
     method = "GET"
-    uri = "/v1/debug/cluster/rpc_stats"
+
+    if node is not None:
+        uri = "/v1/cluster/nodes/{}/chassis".format(node)
+    else:
+        uri = "/v1/cluster/nodes/chassis/"
 
     return request.rest_request(conninfo, credentials, method, uri)

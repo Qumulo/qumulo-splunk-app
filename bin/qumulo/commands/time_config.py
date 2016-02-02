@@ -15,7 +15,6 @@ import qumulo.lib.util
 import qumulo.rest.time_config as time_config
 
 class GetTimeCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "time_get"
     DESCRIPTION = "Get time configuration."
 
@@ -24,7 +23,6 @@ class GetTimeCommand(qumulo.lib.opts.Subcommand):
         print time_config.get_time(conninfo, credentials)
 
 class SetTimeCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "time_set"
     DESCRIPTION = "Set time configuration."
 
@@ -49,7 +47,6 @@ class SetTimeCommand(qumulo.lib.opts.Subcommand):
                                            ntp_servers)
 
 class GetTimeStatusCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "time_status"
     DESCRIPTION = "Get time configuration status."
 

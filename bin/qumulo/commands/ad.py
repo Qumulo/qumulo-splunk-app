@@ -16,7 +16,6 @@ import qumulo.lib.util
 import qumulo.rest.ad as ad
 
 class ListAdCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "ad_list"
     DESCRIPTION = "List Active Directory configuration"
 
@@ -25,7 +24,6 @@ class ListAdCommand(qumulo.lib.opts.Subcommand):
         print ad.list_ad(conninfo, credentials)
 
 class PollAdCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "ad_poll"
     DESCRIPTION = "Poll Active Directory configuration"
 
@@ -44,7 +42,6 @@ def add_ad_options(parser, creds_required):
                         required=creds_required)
 
 class JoinAdCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "ad_join"
     DESCRIPTION = "Join an Active Directory Domain"
 
@@ -64,7 +61,6 @@ class JoinAdCommand(qumulo.lib.opts.Subcommand):
             args.ou, domain_netbios=args.domain_netbios)
 
 class LeaveAdCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "ad_leave"
     DESCRIPTION = "Leave an Active Directory Domain"
 
@@ -78,39 +74,9 @@ class LeaveAdCommand(qumulo.lib.opts.Subcommand):
                                   args.username, args.password)
 
 class CancelAdCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "ad_cancel"
     DESCRIPTION = "Cancel current AD join/leave operation and clear errors"
 
     @staticmethod
     def main(conninfo, credentials, _args):
         print ad.cancel_ad(conninfo, credentials)
-
-class SetAdMachineAccount(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
-    NAME = "ad_set_machine_account"
-    DESCRIPTION = "Set the machine account used for AD"
-
-    @staticmethod
-    def options(parser):
-        parser.add_argument("-d", "--domain", type=str, default=None,
-            help="Fully-qualified name of Domain Controller",
-            required=True)
-        parser.add_argument("-u", "--username", type=str, default=None,
-            help="Machine user name",
-            required=True)
-        parser.add_argument("-p", "--password", type=str, default=None,
-            help="Machine user password",
-            required=True)
-        parser.add_argument("-s", "--salt", type=str, default=None,
-            help="Machine account salt (principal)",
-            required=True)
-        parser.add_argument("-i", "--sid", type=str, default=None,
-            help="Machine account sid",
-            required=True)
-
-    @staticmethod
-    def main(conninfo, credentials, args):
-        print ad.set_ad_machine_account(
-            conninfo, credentials, args.domain, args.username,
-            args.password, args.salt, args.sid)

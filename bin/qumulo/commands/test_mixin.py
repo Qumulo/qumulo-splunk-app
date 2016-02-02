@@ -25,8 +25,8 @@ class CommandTest(object):
         This should be called by subclasses' own setUp method, which will be
         called before every test.
 
-        The first three arguments specify the class under test, the name of the
-        command, and whether it requires credentials.
+        The first two arguments specify the class under test and the name of the
+        command.
 
         The remaining arguments are strings that specify the name of extern
         symbols that should be patched with mocks for every test. Those mocks

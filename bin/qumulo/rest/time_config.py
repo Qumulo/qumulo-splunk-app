@@ -15,7 +15,7 @@ import qumulo.lib.request as request
 @request.request
 def get_time(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/time"
+    uri = "/v1/time/settings"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -23,7 +23,7 @@ def get_time(conninfo, credentials):
 def set_time(conninfo, credentials,
                      use_ad_for_primary=None, ntp_servers=None):
     method = "PATCH"
-    uri = "/v1/conf/time"
+    uri = "/v1/time/settings"
 
     time_config = {}
 
@@ -39,6 +39,6 @@ def set_time(conninfo, credentials,
 @request.request
 def get_time_status(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/time/status"
+    uri = "/v1/time/status"
 
     return request.rest_request(conninfo, credentials, method, uri)

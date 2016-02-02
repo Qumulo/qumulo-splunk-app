@@ -15,27 +15,9 @@ import qumulo.lib.opts
 import qumulo.rest.disks as disks
 
 class GetDisksStatus(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "disks_status_get"
     DESCRIPTION = "Get information about internal disk status"
 
     @staticmethod
     def main(conninfo, credentials, _args):
         print disks.disks_status_get(conninfo, credentials)
-
-class GetDisksCounters(qumulo.lib.opts.Subcommand):
-    NAME = "disks_counters_get"
-    DESCRIPTION = "Return debug counters for disks"
-
-    @staticmethod
-    def main(conninfo, credentials, _args):
-        print disks.disks_counters_get(conninfo, credentials)
-
-class RescanDisksCommand(qumulo.lib.opts.Subcommand):
-    NAME = "rescan_disks"
-    DESCRIPTION = ("Ask QFSD to rescan its disks and perform quorum events on "
-                   "change.")
-
-    @staticmethod
-    def main(conninfo, credentials, _args):
-        print disks.rescan_disks(conninfo, credentials)

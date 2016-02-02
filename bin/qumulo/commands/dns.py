@@ -16,7 +16,6 @@ import qumulo.rest.dns as dns
 import qumulo.lib.util
 
 class ResolveIpAddresses(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "dns_resolve_ips"
     DESCRIPTION = "Resolve IP addresses to hostnames"
 

@@ -17,7 +17,6 @@ import qumulo.rest.auth as auth
 from qumulo.lib.request import NEED_LOGIN_MESSAGE
 
 class LoginCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "login"
     DESCRIPTION = "Log in to qfsd to get REST credentials"
 
@@ -40,7 +39,6 @@ class LoginCommand(qumulo.lib.opts.Subcommand):
         qumulo.lib.auth.set_credentials(login_resp, args.credentials_store)
 
 class LogoutCommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "logout"
     DESCRIPTION = "Remove qfsd REST credentials"
 
@@ -65,7 +63,6 @@ class LogoutCommand(qumulo.lib.opts.Subcommand):
         # Print nothing on success
 
 class WhoAmICommand(qumulo.lib.opts.Subcommand):
-    VISIBLE = True
     NAME = "who_am_i"
     DESCRIPTION = "Get information on the current user"
 

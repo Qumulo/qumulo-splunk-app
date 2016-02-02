@@ -18,7 +18,7 @@ import qumulo.lib.util as util
 @request.request
 def login(conninfo, credentials, username, password):
     method = "POST"
-    uri = "/v1/login"
+    uri = "/v1/session/login"
 
     login_info = {
         'username': util.parse_ascii(username, 'username'),
@@ -37,7 +37,7 @@ def change_password(conninfo, credentials, old_password, new_password):
     "Unlike SetUserPassword, acts implicitly on logged in user"
 
     method = "POST"
-    uri = "/v1/setpassword"
+    uri = "/v1/session/change-password"
     body = {
         'old_password': util.parse_ascii(old_password, 'old password'),
         'new_password': util.parse_ascii(new_password, 'new password')
@@ -48,4 +48,6 @@ def change_password(conninfo, credentials, old_password, new_password):
 @request.request
 def who_am_i(conninfo, credentials):
     "Same as GET on user/<current_id>"
-    return request.rest_request(conninfo, credentials, "GET", "/v1/who-am-i")
+
+    return request.rest_request(
+        conninfo, credentials, "GET", "/v1/session/who-am-i")

@@ -16,7 +16,7 @@ from qumulo.lib.uri import UriBuilder
 @request.request
 def config_get(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/upgrade/"
+    uri = "/v1/upgrade/settings"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
@@ -35,7 +35,7 @@ def config_put(
         'target': str(target),
     }
     method = "PUT"
-    uri = UriBuilder(path="/v1/conf/upgrade/", rstrip_slash=False)
+    uri = UriBuilder(path="/v1/upgrade/settings")
     if override_version:
         uri.add_query_param('override_compatibility_check', 'True')
 
@@ -45,7 +45,7 @@ def config_put(
 @request.request
 def status_get(conninfo, credentials):
     method = "GET"
-    uri = "/v1/conf/upgrade/status/"
+    uri = "/v1/upgrade/status"
 
     return request.rest_request(conninfo, credentials, method, uri)
 
