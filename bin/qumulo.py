@@ -6,11 +6,8 @@ import sys,logging,os,time,getopt
 import xml.dom.minidom
 from datetime import datetime
 
-
-# Import Qumulo REST libraries
-import qumulo.lib.auth
-import qumulo.lib.request
-import qumulo.rest.fs as fs
+# qumulo_client wraps all of the Qumulo REST API interactions
+from qumulo_client import QumuloClient
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
@@ -129,8 +126,10 @@ def do_validate():
     config = get_validation_config() 
     
     
-def do_run(config):
-    
+def do_run(client):
+
+    config = client.config
+
     #setup some globals
     global STANZA
     STANZA = config.get("name")
@@ -344,6 +343,8 @@ if __name__ == '__main__':
             usage()
     else:
         config = get_input_config()
-        do_run(config)
+        client = QumuloClient(config)
+        do_run(client)
+
         
     sys.exit(0)
