@@ -8,6 +8,9 @@ from datetime import datetime
 
 
 # Import Qumulo REST libraries
+import qumulo.lib.auth
+import qumulo.lib.request
+import qumulo.rest.fs as fs
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
