@@ -72,5 +72,6 @@ class QumuloClient(object):
         return qumulo.rest.analytics.iops_get(self.connection, self.credentials)
 
     def get_throughput(self):
+        api_begin_time = int(time.time()-self.polling_interval)
         return qumulo.rest.analytics.time_series_get(client.connection, client.credentials, api_begin_time)
 
