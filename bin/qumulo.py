@@ -162,6 +162,8 @@ def do_run(client):
             
             # TODO
             print_xml_stream(client.get_capacity())
+            print_xml_stream(client.get_iops())
+            print_xml_stream(client.get_throughput())
             # based on value of endpoint_to_poll , execute the endpoint from the qumulo python API
             # get the JSON response
             # perform any processing on the response JSON
