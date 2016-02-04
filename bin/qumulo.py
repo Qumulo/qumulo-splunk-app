@@ -134,53 +134,24 @@ def do_run(client):
     global STANZA
     STANZA = config.get("name")
     
-    #params
-    
-    #connection params
-    username=config.get("username","admin")
-    password=config.get("password","admin")
-    host=config.get("nodehost","localhost")
-    port=int(config.get("port",8000))
 
-    #logical name of endpoint to poll
-    endpoint_to_poll=config.get("endpoint_to_poll","")
-    if endpoint_to_poll == "":
-        logging.error("No polling endpoint was speciifed , exiting.")
-        sys.exit(2) 
-
-    
     #polling can be a time interval or CRON pattern
-    polling_interval_string = config.get("polling_interval","60")
+    # polling_interval_string = config.get("polling_interval","60")
+    polling_interval_string = "60"
     
     if polling_interval_string.isdigit():
         polling_type = 'interval'
-        polling_interval=int(polling_interval_string)   
+        # polling_interval=int(polling_interval_string)
+        polling_interval = 60
     else:
         polling_type = 'cron'
         cron_start_date = datetime.now()
         cron_iter = croniter(polling_interval_string, cron_start_date)
 
-
     #optional custom fields
     delimiter=config.get("delimiter",",")
 
-    request_body=config.get("request_payload")
-           
-    request_headers={}
-    request_headers_str=config.get("request_headers")
-    if not request_headers_str is None:
-        request_headers = dict((k.strip(), v.strip()) for k,v in 
-              (item.split('=',1) for item in request_headers_str.split(delimiter)))
-       
-    request_url_args={} 
-    request_url_args_str=config.get("request_url_args")
-    if not request_url_args_str is None:
-        request_url_args = dict((k.strip(), v.strip()) for k,v in 
-              (item.split('=',1) for item in request_url_args_str.split(delimiter)))
-        
-    
-       
-    try: 
+    try:
           
         while True:
              
@@ -189,10 +160,8 @@ def do_run(client):
                 while get_current_datetime_for_cron() != next_cron_firing:
                     time.sleep(float(10))
             
-            
-            
-        
             # TODO
+            print_xml_stream(client.get_capacity())
             # based on value of endpoint_to_poll , execute the endpoint from the qumulo python API
             # get the JSON response
             # perform any processing on the response JSON
