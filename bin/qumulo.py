@@ -160,9 +160,8 @@ def do_run(client):
                 while get_current_datetime_for_cron() != next_cron_firing:
                     time.sleep(float(10))
             
-            # TODO
-            print_xml_stream(client.get_capacity())
             print_xml_stream(client.get_iops())
+            print_xml_stream(client.get_capacity())
             print_xml_stream(client.get_throughput())
             # based on value of endpoint_to_poll , execute the endpoint from the qumulo python API
             # get the JSON response
@@ -184,9 +183,6 @@ def do_run(client):
 
             if polling_type == 'interval':                         
                 time.sleep(float(polling_interval))
-            
-                   
-            
             
     except RuntimeError,e:
         logging.error("Looks like an error: %s" % str(e))
