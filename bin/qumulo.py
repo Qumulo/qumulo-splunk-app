@@ -2,11 +2,16 @@
 Modular Input Script for Qumulo
 '''
 
-import json
-import sys,logging,os,time
-import xml.dom.minidom
 from datetime import datetime
-# qumulo_client wraps all of the Qumulo REST API interactions
+import json
+import math
+import os
+import sys
+import logging
+import time
+import xml.dom.minidom
+
+#  qumulo_client wraps all of the Qumulo REST API interactions
 from qumulo_client import QumuloClient
 from qumulo.lib.request import RequestError
 
@@ -132,7 +137,14 @@ def process_throughput():
     except RequestError, excpt:
         logging.error("Exception performing request for Throughput: %s" % str(excpt))
         return
-    print_xml_stream(json.dumps(throughput))
+
+    for entry in throughput:
+        for i in range(len(entry['values'])):
+            log_entry = {}
+            log_entry['metric'] = entry['id']
+            log_entry['time'] = entry['times'][i]
+            log_entry['value'] = entry['values'][i]
+            print_xml_stream(json.dumps(log_entry))
 
 def process_iops():
     try:
@@ -150,9 +162,9 @@ def process_capacity():
         return
 
     cap = {}
-    cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/(1024*1024))
-    cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/(1024*1024))
-    cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/(1024*1024))
+    cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/math.pow(1024,3))
+    cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/math.pow(1024,3))
+    cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/math.pow(1024,3))
     print_xml_stream(json.dumps(cap))
 
 def do_run(client):
