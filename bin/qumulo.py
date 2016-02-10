@@ -5,14 +5,13 @@ Modular Input Script for Qumulo
 import sys,logging,os,time,getopt
 import xml.dom.minidom
 from datetime import datetime
-
 # qumulo_client wraps all of the Qumulo REST API interactions
 from qumulo_client import QumuloClient
+
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
 EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
-
 
 # Import any Eggs
 for filename in os.listdir(EGG_DIR):
@@ -134,22 +133,25 @@ def do_run(client):
     global STANZA
     STANZA = config.get("name")
     
+    #logical name of endpoint to poll
+    endpoint_to_poll=config.get("endpoint_to_poll","")
+    if endpoint_to_poll == "":
+        logging.error("No polling endpoint was speciifed , exiting.")
+        sys.exit(2) 
 
     #polling can be a time interval or CRON pattern
-    # polling_interval_string = config.get("polling_interval","60")
-    polling_interval_string = "60"
+    polling_interval_string = config.get("polling_interval","60")
+    #defaults
+    polling_interval = 60
+    polling_type = 'interval'
     
     if polling_interval_string.isdigit():
         polling_type = 'interval'
-        # polling_interval=int(polling_interval_string)
-        polling_interval = 60
+        polling_interval=int(polling_interval_string)
     else:
         polling_type = 'cron'
         cron_start_date = datetime.now()
         cron_iter = croniter(polling_interval_string, cron_start_date)
-
-    #optional custom fields
-    delimiter=config.get("delimiter",",")
 
     try:
           
@@ -159,26 +161,31 @@ def do_run(client):
                 next_cron_firing = cron_iter.get_next(datetime)
                 while get_current_datetime_for_cron() != next_cron_firing:
                     time.sleep(float(10))
-            
-            print_xml_stream(client.get_iops())
-            print_xml_stream(client.get_capacity())
-            print_xml_stream(client.get_throughput())
-            # based on value of endpoint_to_poll , execute the endpoint from the qumulo python API
-            # get the JSON response
-            # perform any processing on the response JSON
-            # call the print_xml_stream function to write JSON out to Splunk
-
-                #if(endpoint_to_poll == "stats"):
-                    ## Obtain REST credentials
-                #    (conninfo, creds) = login(host, username, password, port)
-                #    ## Make the API call
-                #    try:
-                #        response, _  = qumulo.rest.stats.iops_get(
-                #                conninfo, creds)
-                #        print_xml_stream(response)
-                #    except qumulo.lib.request.RequestError, excpt:
-                #        logging.error("Exception performing request: %s" % str(excpt))
-                #        continue
+           
+            if(endpoint_to_poll == "iops"):
+               
+                try:
+                    print_xml_stream(client.get_iops())
+                        
+                except qumulo.lib.request.RequestError, excpt:
+                    logging.error("Exception performing request for IOPS: %s" % str(excpt))
+                    continue
+            if(endpoint_to_poll == "capacity"):
+               
+                try:
+                    print_xml_stream(client.get_capacity())
+                        
+                except qumulo.lib.request.RequestError, excpt:
+                    logging.error("Exception performing request for Capacity: %s" % str(excpt))
+                    continue
+            if(endpoint_to_poll == "throughput"):
+               
+                try:
+                    print_xml_stream(client.get_throughput())
+                        
+                except qumulo.lib.request.RequestError, excpt:
+                    logging.error("Exception performing request for Throughput: %s" % str(excpt))
+                    continue
 
 
             if polling_type == 'interval':                         
