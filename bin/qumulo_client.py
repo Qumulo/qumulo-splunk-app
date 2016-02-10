@@ -8,6 +8,7 @@ import qumulo.lib.auth
 import qumulo.lib.request
 import qumulo.rest
 
+
 class QumuloClient(object):
     ''' class wrapper for REST API cmd so that we can new them up in tests '''
     def __init__(self, config):
@@ -47,12 +48,12 @@ class QumuloClient(object):
 
 
     def get_capacity(self):
-        return json.dumps(qumulo.rest.fs.read_fs_stats(self.connection, self.credentials).data)
+        return qumulo.rest.fs.read_fs_stats(self.connection, self.credentials).data
 
     def get_iops(self):
-        return json.dumps(qumulo.rest.analytics.iops_get(self.connection, self.credentials).data)
+        return qumulo.rest.analytics.iops_get(self.connection, self.credentials).data
 
     def get_throughput(self):
         api_begin_time = int(time.time()-self.polling_interval)
-        return json.dumps(qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data)
+        return qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data
 

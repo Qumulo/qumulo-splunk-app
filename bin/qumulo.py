@@ -2,11 +2,13 @@
 Modular Input Script for Qumulo
 '''
 
-import sys,logging,os,time,getopt
+import json
+import sys,logging,os,time
 import xml.dom.minidom
 from datetime import datetime
 # qumulo_client wraps all of the Qumulo REST API interactions
 from qumulo_client import QumuloClient
+from qumulo.lib.request import RequestError
 
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
@@ -122,9 +124,37 @@ def get_current_datetime_for_cron():
     return current_dt
             
 def do_validate():
-    config = get_validation_config() 
-    
-    
+    config = get_validation_config()
+
+def process_throughput():
+    try:
+        throughput = client.get_throughput()
+    except RequestError, excpt:
+        logging.error("Exception performing request for Throughput: %s" % str(excpt))
+        return
+    print_xml_stream(json.dumps(throughput))
+
+def process_iops():
+    try:
+        iops = client.get_iops()
+    except RequestError, excpt:
+        logging.error("Exception performing request for IOPS: %s" % str(excpt))
+        return
+    print_xml_stream(json.dumps(iops))
+
+def process_capacity():
+    try:
+        capacity = client.get_capacity()
+    except RequestError, excpt:
+        logging.error("Exception performing request for Capacity: %s" % str(excpt))
+        return
+
+    cap = {}
+    cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/(1024*1024))
+    cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/(1024*1024))
+    cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/(1024*1024))
+    print_xml_stream(json.dumps(cap))
+
 def do_run(client):
 
     config = client.config
@@ -163,30 +193,16 @@ def do_run(client):
                     time.sleep(float(10))
            
             if(endpoint_to_poll == "iops"):
-               
-                try:
-                    print_xml_stream(client.get_iops())
-                        
-                except qumulo.lib.request.RequestError, excpt:
-                    logging.error("Exception performing request for IOPS: %s" % str(excpt))
-                    continue
-            if(endpoint_to_poll == "capacity"):
-               
-                try:
-                    print_xml_stream(client.get_capacity())
-                        
-                except qumulo.lib.request.RequestError, excpt:
-                    logging.error("Exception performing request for Capacity: %s" % str(excpt))
-                    continue
-            if(endpoint_to_poll == "throughput"):
-               
-                try:
-                    print_xml_stream(client.get_throughput())
-                        
-                except qumulo.lib.request.RequestError, excpt:
-                    logging.error("Exception performing request for Throughput: %s" % str(excpt))
-                    continue
+                process_iops()
+                continue
 
+            if(endpoint_to_poll == "capacity"):
+                process_capacity()
+                continue
+
+            if(endpoint_to_poll == "throughput"):
+                process_throughput()
+                continue
 
             if polling_type == 'interval':                         
                 time.sleep(float(polling_interval))
