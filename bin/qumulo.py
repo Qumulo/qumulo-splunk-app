@@ -152,7 +152,9 @@ def process_iops():
     except RequestError, excpt:
         logging.error("Exception performing request for IOPS: %s" % str(excpt))
         return
-    print_xml_stream(json.dumps(iops))
+
+    for entry in iops["entries"]:
+        print_xml_stream(json.dumps(entry))
 
 def process_capacity():
     try:
