@@ -23,8 +23,9 @@
 					<view name="list" />
 					<key name="exampleText">Qumulo REST endpoint to poll</key>
 					<options>
-						<opt value="stats" label="Get stats" />
-						<opt value="users" label="Get users" />
+						<opt value="iops" label="Get IOPS" />
+						<opt value="capacity" label="Get Capacity" />
+						<opt value="throughput" label="Get Throughput" />
 					</options>
 				</element>
 
