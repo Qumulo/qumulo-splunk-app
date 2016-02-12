@@ -5,3 +5,19 @@ modtime = 1455133442.429040000
 [app/install/is_configured]
 version = 6.3.2
 modtime = 1455133443.311863000
+
+[transforms/REPORT-IOPsTotalRate]
+owner = admin
+version = 6.3.2
+modtime = 1455217586.681258000
+
+[props/qumulo_throughput/REPORT-IOPsTotalRate]
+access = read : [ * ], write : [ admin ]
+export = system
+owner = admin
+version = 6.3.2
+modtime = 1455217586.784706000
+
+[views/qumulo_overview]
+version = 6.3.2
+modtime = 1455233779.756711000
