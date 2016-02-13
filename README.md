@@ -1,56 +1,60 @@
-# Qumulo App version X.X
+# Qumulo App version 1.2.22
 
 ## Overview
 
-* Some intro to your app
+Qumulo Cluster integration app for Splunk
 
 ## Dependencies
 
-* List clearly all dependencies
+Qumulo REST API
+croniter
+six
 
 ## Open Source Software
 
-* List clearly any OSS used and licenses
+
+Licended under Educational Community License (ECL) Version 2.0, April 2007
+
+http://www.osedu.org/licenses/
+
+The Educational Community License version 2.0 ("ECL") consists of the Apache 2.0 license, modified to change the scope of the patent grant in section 3 to be specific to the needs of the education communities using this license. The original Apache 2.0 license can be found at: http://www.apache.org/licenses/LICENSE-2.0
+
+See project file LICENSE for details and terms
+
 
 ## Supported Splunk Versions
 
-* List supported Splunk versions etc...
+Verified with Splunk 6.3
 
 ## Setup
 
-* Any setup steps for the user to be aware of. 
+Copy files to $SPLUNK_HOME/etc/apps/qumulo_splunk_app and restart Splunk
 
 ## Configuration
 
-* Any configuration steps for the user to be aware of.
+You'll need to provide hostname, port number and username and password for an account
+with access to Qumulo REST API after installing the app.
+
+You can also configure different poll intervals for each endpoint etc.
 
 ## Splunk Meta Data
 
-* List any default indexes , sources and sourcetypes that your App creates
+The Qumulo Splunk app creates a new index (qumulo)
 
 ## CIM
 
-* List any sourcetypes and CIM mapping (if applicable).  If not applicable to CIM, then state “N/A”.
+Qumulo Splunk App defines three source types:
+
+[qumulo://get_iops]
+[qumulo://get_capacity]
+[qumulo://get_throughput]
 
 ## Distributed deployment
 
-* Any notes about distributed deployment if this is not a single server app
+This app is designed to run in context of a Splunk server and communicates via REST 
+with a Qumulo cluster.
 
 ## Additional declarations
-
-* Implements eventgen
-* Changes Splunk limits (limits.conf)
-* Implements summary index
-* Implements tscollect
-* Implements report acceleration
-* Implements data model
-* Implements data model acceleration
-* Contains inputcsv/outputcsv
-* Any outbound communications (outputs.conf, perhaps more)
-* Verify list Open Source components
-* Declare and document custom commands
-* Is Adobe Flash required for visualizations?
-* Access to files outside the “app” directory
 
 ## Using
 
@@ -66,11 +70,13 @@ Any log entries/errors will get written to $SPLUNK_HOME/var/log/splunk/splunkd.l
 
 ## Contact and Support
 
+http://qumulo.com
+
 Support hours (at least 8 hours a day, 5 days a week)
-How to get support (email, website, phone)
-Observed holidays
-Expectations for a response.
-How are issues tracked
-Contact email and phone number in case we need to contact you.
+How to get support (email, website, phone):
+mmurray@qumuloc.com
 
+Issues with this application are tracked using GitHub issues on the associated project, which
+you can find here:
 
+https://github.com/Qumulo/qumulo_splunk_app
