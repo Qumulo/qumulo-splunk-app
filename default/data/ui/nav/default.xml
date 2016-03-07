@@ -13,7 +13,7 @@
   <a href="../../../en-US/manager/qumulo_splunk_app/apps/local/qumulo_splunk_app/setup?action=edit">Setup</a>
 
   <a href="../../../en-US/manager/qumulo_splunk_app/data/inputs/qumulo">Qumulo REST Inputs</a>
-  <a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3D_internal%20error%20ExecProcessor%20qumulo.py">Modular Input Errors</a>
+  <a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3D_internal%20error%20ExecProcessor%20qumulo.py">Qumulo Splunk App Errors</a>
  
 </collection>
 
