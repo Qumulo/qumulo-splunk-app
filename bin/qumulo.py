@@ -23,10 +23,10 @@ EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
 # Import any Eggs
 for filename in os.listdir(EGG_DIR):
     if filename.endswith(".egg"):
-        sys.path.append(EGG_DIR + filename) 
-       
+        sys.path.append(EGG_DIR + filename)
+
 from croniter import croniter
-           
+
 
 #set up logging
 logging.root
@@ -45,7 +45,7 @@ SCHEME = """<scheme>
     <use_single_instance>false</use_single_instance>
 
     <endpoint>
-        <args>    
+        <args>
             <arg name="name">
                 <title>Qumulo input name</title>
                 <description>Name of this Qumulo input</description>
@@ -75,21 +75,21 @@ SCHEME = """<scheme>
                 <required_on_edit>false</required_on_edit>
                 <required_on_create>true</required_on_create>
             </arg>
-                   
+
             <arg name="endpoint_to_poll">
                 <title>Endpoint</title>
                 <description>Qumulo REST endpoint to poll</description>
                 <required_on_edit>true</required_on_edit>
                 <required_on_create>true</required_on_create>
             </arg>
-            
+
             <arg name="request_body">
                 <title>Custom Request Body</title>
                 <description>Request body payload for POST and PUT</description>
                 <required_on_edit>false</required_on_edit>
                 <required_on_create>false</required_on_create>
             </arg>
-            
+
             <arg name="request_headers">
                 <title>Custom Request Headers</title>
                 <description>in format prop=value,prop2=value2</description>
@@ -102,21 +102,21 @@ SCHEME = """<scheme>
                 <required_on_edit>false</required_on_edit>
                 <required_on_create>false</required_on_create>
             </arg>
-            
+
             <arg name="polling_interval">
                 <title>Polling Interval</title>
                 <description>Interval time in seconds or a CRON pattern to poll the endpoint</description>
                 <required_on_edit>false</required_on_edit>
                 <required_on_create>false</required_on_create>
             </arg>
-            
+
             <arg name="delimiter">
                 <title>Delimiter</title>
                 <description>Delimiter to use for any multi "key=value" field inputs</description>
                 <required_on_edit>false</required_on_edit>
                 <required_on_create>false</required_on_create>
             </arg>
-            
+
         </args>
     </endpoint>
 </scheme>
@@ -127,7 +127,7 @@ def get_current_datetime_for_cron():
     #dont need seconds/micros for cron
     current_dt = current_dt.replace(second=0, microsecond=0)
     return current_dt
-            
+
 def do_validate():
     config = get_validation_config()
 
@@ -176,19 +176,19 @@ def do_run(client):
     #setup some globals
     global STANZA
     STANZA = config.get("name")
-    
+
     #logical name of endpoint to poll
     endpoint_to_poll=config.get("endpoint_to_poll","")
     if endpoint_to_poll == "":
         logging.error("No polling endpoint was speciifed , exiting.")
-        sys.exit(2) 
+        sys.exit(2)
 
     #polling can be a time interval or CRON pattern
     polling_interval_string = config.get("polling_interval","60")
     #defaults
     polling_interval = 60
     polling_type = 'interval'
-    
+
     if polling_interval_string.isdigit():
         polling_type = 'interval'
         polling_interval=int(polling_interval_string)
@@ -198,14 +198,14 @@ def do_run(client):
         cron_iter = croniter(polling_interval_string, cron_start_date)
 
     try:
-          
+
         while True:
-             
+
             if polling_type == 'cron':
                 next_cron_firing = cron_iter.get_next(datetime)
                 while get_current_datetime_for_cron() != next_cron_firing:
                     time.sleep(float(10))
-           
+
             if(endpoint_to_poll == "iops"):
                 process_iops()
                 continue
@@ -218,18 +218,18 @@ def do_run(client):
                 process_throughput()
                 continue
 
-            if polling_type == 'interval':                         
+            if polling_type == 'interval':
                 time.sleep(float(polling_interval))
-            
+
     except RuntimeError,e:
         logging.error("Looks like an error: %s" % str(e))
-        sys.exit(2) 
-            
+        sys.exit(2)
+
 
 # prints validation error data to be consumed by Splunk
 def print_validation_error(s):
     print "<error><message>%s</message></error>" % encodeXMLText(s)
-    
+
 # prints XML stream
 def print_xml_stream(s):
     print "<stream><event unbroken=\"1\"><data>%s</data><done/></event></stream>" % encodeXMLText(s)
@@ -242,7 +242,7 @@ def encodeXMLText(text):
     text = text.replace(">", "&gt;")
     text = text.replace("\n", "")
     return text
-  
+
 def usage():
     print "usage: %s [--scheme|--validate-arguments]"
     logging.error("Incorrect Program Usage")
@@ -262,17 +262,17 @@ def get_input_config():
         # parse the config XML
         doc = xml.dom.minidom.parseString(config_str)
         root = doc.documentElement
-        
+
         session_key_node = root.getElementsByTagName("session_key")[0]
         if session_key_node and session_key_node.firstChild and session_key_node.firstChild.nodeType == session_key_node.firstChild.TEXT_NODE:
             data = session_key_node.firstChild.data
-            config["session_key"] = data 
-            
+            config["session_key"] = data
+
         server_uri_node = root.getElementsByTagName("server_uri")[0]
         if server_uri_node and server_uri_node.firstChild and server_uri_node.firstChild.nodeType == server_uri_node.firstChild.TEXT_NODE:
             data = server_uri_node.firstChild.data
-            config["server_uri"] = data   
-            
+            config["server_uri"] = data
+
         conf_node = root.getElementsByTagName("configuration")[0]
         if conf_node:
             logging.debug("XML: found configuration")
@@ -301,7 +301,7 @@ def get_input_config():
         if not config:
             raise Exception, "Invalid configuration received from Splunk."
 
-        
+
     except Exception, e:
         raise Exception, "Error getting Splunk configuration via STDIN: %s" % str(e)
 
@@ -337,9 +337,9 @@ def get_validation_config():
     return val_data
 
 if __name__ == '__main__':
-      
+
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--scheme":           
+        if sys.argv[1] == "--scheme":
             do_scheme()
         elif sys.argv[1] == "--validate-arguments":
             do_validate()
@@ -350,5 +350,5 @@ if __name__ == '__main__':
         client = QumuloClient(config)
         do_run(client)
 
-        
+
     sys.exit(0)
