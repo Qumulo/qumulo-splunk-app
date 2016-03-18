@@ -85,6 +85,7 @@ class QumuloClient(object):
                         path = "/"
                     if path not in new_big_tree[i]:
                         new_big_tree[i][path] = iops_dict.copy()
+                    new_big_tree[i][path]["path"] = path
                     new_big_tree[i][path]["counter"] += 1
                     new_big_tree[i][path][d["type"]] += d["rate"]
                     new_big_tree[i][path]["total"] += d["rate"]
@@ -105,10 +106,21 @@ class QumuloClient(object):
 
     def get_throughput(self):
         api_begin_time = int(time.time()-self.polling_interval)
-        return qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data
+        throughput = qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data
+        # return only the last/latest reading for each indicator... not all of them.
+        results = []
+        for result in throughput:
+            last_value = len(result["values"])-1
+
+            result["times"] = [ result["times"][last_value]]
+            result["values"] = [ result["values"][last_value]]
+            results.append(result)
+
+        return results
 
     def get_iops(self):
 
+        # TODO:  Need better Map-Reduce code here.... check NumPY ufunc.reduce and friends http://goo.gl/xJYUnV
         iops_types = OrderedDict([("read","file_read"), ("write","file_write"), ("namespace-read","namespace_read"), ("namespace-write","namespace_write"), ("read-agg", ""), ("write-agg", ""), ("namespace-read-agg", ""), ("namespace-write-agg", "")])
         iops_dict = {"counter":0, "total":0, "total-agg":0}
 
@@ -116,10 +128,9 @@ class QumuloClient(object):
             iops_dict[c] = 0
 
         try:
-            cluster_name = 'gravytrain'
 
-            api_cli = RestClient("gravytrain.eng.qumulo.com", 8000)
-            api_cli.login("admin", "admin")
+            api_cli = RestClient(self.host, self.port)
+            api_cli.login(self.username, self.password)
             iops_data = api_cli.analytics.iops_get()
             ids = {}
 
@@ -129,9 +140,7 @@ class QumuloClient(object):
                     ids[inode_id] = 1
 
             print "Get IDS"
-            start_time = time.time()
-            start_date = time.strftime('%Y-%m-%d')
-            start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+
             ids = sorted(ids.keys())
             id_to_path = {}
             while len(ids) > 0:
@@ -208,5 +217,11 @@ class QumuloClient(object):
         except:
             pass
 
-        return big_tree
+        # sigh.... TODO: get rid of this
+        results = []
+        for key, value in big_tree.iteritems():
+            dict = value.values()[0]
+            results.append(dict)
+
+        return results
 

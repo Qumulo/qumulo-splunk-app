@@ -141,19 +141,22 @@ def process_throughput():
     for entry in throughput:
         for i in range(len(entry['values'])):
             log_entry = {}
-            log_entry['metric'] = entry['id']
-            log_entry['time'] = entry['times'][i]
-            log_entry['value'] = entry['values'][i]
-            print_xml_stream(json.dumps(log_entry))
+            if "throughput" in entry['id']:
+                log_entry['metric'] = entry['id']
+                log_entry['time'] = entry['times'][i]
+                log_entry['value'] = entry['values'][i]
+                print_xml_stream(json.dumps(log_entry))
 
 def process_iops():
     try:
         iops = client.get_iops()
+
+        for op in iops:
+            print_xml_stream(json.dumps(op))
+
     except RequestError, excpt:
         logging.error("Exception performing request for IOPS: %s" % str(excpt))
         return
-
-    print_xml_stream(json.dumps(iops))
 
 def process_capacity():
     try:
