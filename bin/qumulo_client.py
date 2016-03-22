@@ -97,16 +97,45 @@ class QumuloClient(object):
                 pass
         return new_big_tree
 
+    def get_api_response(self, api_call, **kwargs):
+
+        attempt = 0
+        response_object = None
+        retry = True
+
+        while retry and (attempt <= 10):
+            try:
+                if len(kwargs) > 0:
+                    # TODO: fix.  This call is not really general-purpose yet
+                    response_object = api_call(self.connection, self.credentials, kwargs.values()[0])
+                else:
+                    response_object = api_call(self.connection, self.credentials)
+
+                if len(response_object) == 0:
+                    retry = True
+                else:
+                    retry = False
+            except Exception, excpt:
+                # login again
+                self.login()
+                retry = True
+
+        if retry:
+            attempt += 1
+            time.sleep(10)
+
+
+        return response_object.data
+
+
     def get_capacity(self):
-        return qumulo.rest.fs.read_fs_stats(self.connection, self.credentials).data
-
-    def old_get_iops(self):
-        return qumulo.rest.analytics.iops_get(self.connection, self.credentials).data
-
+        # return qumulo.rest.fs.read_fs_stats(self.connection, self.credentials).data
+        return self.get_api_response(qumulo.rest.fs.read_fs_stats)
 
     def get_throughput(self):
         api_begin_time = int(time.time()-self.polling_interval)
         throughput = qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data
+        throughput = self.get_api_response(qumulo.rest.analytics.time_series_get, api_begin_time=api_begin_time)
         # return only the last/latest reading for each indicator... not all of them.
         results = []
         for result in throughput:
@@ -126,6 +155,8 @@ class QumuloClient(object):
 
         for c in iops_types:
             iops_dict[c] = 0
+
+        big_tree = {}
 
         try:
 
@@ -220,8 +251,9 @@ class QumuloClient(object):
         # sigh.... TODO: get rid of this
         results = []
         for key, value in big_tree.iteritems():
-            dict = value.values()[0]
-            results.append(dict)
+            if len(value.values()) > 0:
+                dict = value.values()[0]
+                results.append(dict)
 
         return results
 
