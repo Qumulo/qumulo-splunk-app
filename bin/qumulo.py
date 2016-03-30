@@ -264,12 +264,7 @@ def validate_config(client):
       logging.error("validate_config: Invalid configuration specified: %s" % str(e))
       sys.exit(1)
 
-def run():
-    config = get_config()
-
-    client = QumuloClient(config)
-
-
+def run(client):
 
     validate_config(client)
 
@@ -338,6 +333,7 @@ if __name__ == '__main__':
             print 'You giveth weird arguments'
     else:
         # off we go....
-        run()
-
+        config = get_config()
+        client = QumuloClient(config)
+        run(client)
     sys.exit(0)
