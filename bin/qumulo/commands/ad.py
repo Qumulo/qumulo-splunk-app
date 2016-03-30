@@ -33,13 +33,12 @@ class PollAdCommand(qumulo.lib.opts.Subcommand):
 
 def add_ad_options(parser, creds_required):
     parser.add_argument("-d", "--domain", type=str, default=None, required=True,
-                        help="Fully-qualified name of Domain Controller")
+        help="Fully-qualified name of Domain Controller")
     parser.add_argument("-u", "--username", type=str, default=None,
-                        help="Username on Domain Controller",
-                        required=creds_required)
+        help="Username on Domain Controller",
+        required=creds_required)
     parser.add_argument("-p", "--password", type=str, default=None,
-                        help="Password on Domain Controller",
-                        required=creds_required)
+        help="Password on Domain Controller (insecure, visible via ps)")
 
 class JoinAdCommand(qumulo.lib.opts.Subcommand):
     NAME = "ad_join"
@@ -53,12 +52,22 @@ class JoinAdCommand(qumulo.lib.opts.Subcommand):
                  "the domain name is used.")
         parser.add_argument("-o", "--ou", type=str, default="", required=False,
             help="Organizational Unit to join to")
+        parser.add_argument("--use-ad-posix-attributes", action='store_true',
+            required=False, help="Use AD POSIX attributes.")
+        parser.add_argument("--base-dn", required=False,
+            help="When using LDAP POSIX extensions, query using this base DN")
 
     @staticmethod
     def main(conninfo, credentials, args):
+        if args.password is None:
+            password = qumulo.lib.opts.read_password(prompt='Password: ')
+        else:
+            password = args.password
+
         print ad.join_ad(
-            conninfo, credentials, args.domain, args.username, args.password,
-            args.ou, domain_netbios=args.domain_netbios)
+            conninfo, credentials, args.domain, args.username, password,
+            args.ou, domain_netbios=args.domain_netbios,
+            enable_ldap=args.use_ad_posix_attributes, base_dn=args.base_dn)
 
 class LeaveAdCommand(qumulo.lib.opts.Subcommand):
     NAME = "ad_leave"
@@ -70,8 +79,13 @@ class LeaveAdCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
+        if args.username is not None and args.password is None:
+            password = qumulo.lib.opts.read_password(prompt='Password: ')
+        else:
+            password = args.password
+
         print ad.leave_ad(conninfo, credentials, args.domain,
-                                  args.username, args.password)
+                                  args.username, password)
 
 class CancelAdCommand(qumulo.lib.opts.Subcommand):
     NAME = "ad_cancel"
@@ -80,3 +94,89 @@ class CancelAdCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, _args):
         print ad.cancel_ad(conninfo, credentials)
+
+class UidToSidsGetCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_uid_to_sids"
+    DESCRIPTION = "Get SIDs from UID"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            "--uid",
+            help="Get the SIDs that corresponds to this UID",
+            required=True)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print ad.uid_to_sid_get(conninfo, credentials, args.uid)
+
+class SidToUidGetCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_sid_to_uid"
+    DESCRIPTION = "Get UID from SID"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            "--sid",
+            help="Get the UID that corresponds to this SID",
+            required=True)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print ad.sid_to_uid_get(conninfo, credentials, args.sid)
+
+class SidToGidGetCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_sid_to_gid"
+    DESCRIPTION = "Get GID from SID"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            "--sid",
+            help="Get the GID that corresponds to this SID",
+            required=True)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print ad.sid_to_gid_get(conninfo, credentials, args.sid)
+
+class GidToSidGetCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_gid_to_sids"
+    DESCRIPTION = "Get SIDs from GID"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            "--gid",
+            help="Get the SIDs that corresponds to this GID",
+            required=True)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print ad.gid_to_sid_get(conninfo, credentials, args.gid)
+
+class SidToExpandedGroupSidsGetCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_expand_groups"
+    DESCRIPTION = "Get the SIDs of all the groups that the given SID is a " \
+            "member of (including nested groups)."
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            "--sid",
+            help="Get the SIDS of all the groups this SID belongs " \
+                    "(including all nested groups).",
+            required=True)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print ad.sid_to_expanded_group_sids_get(
+            conninfo, credentials, args.sid)
+
+class ClearCacheCommand(qumulo.lib.opts.Subcommand):
+    NAME = "ad_clear_cache"
+    DESCRIPTION = "Clear the AD ID mapping cache"
+
+    @staticmethod
+    def main(conninfo, credentials, _args):
+        ad.clear_cache_post(conninfo, credentials)

@@ -38,6 +38,9 @@ class RestTest(object):
         # Set up mock for rest_request
         request_patcher = mock.patch('qumulo.lib.request.rest_request')
         self.request_mock = request_patcher.start()
+        self.response_mock = mock.MagicMock()
+        self.etag_mock = mock.MagicMock()
+        self.request_mock.return_value = (self.response_mock, self.etag_mock)
         self.addCleanup(request_patcher.stop)
 
     def run_command(self, *args, **kwargs):

@@ -9,7 +9,6 @@
 import qpaths
 qpaths.setpaths()
 
-import os
 import subprocess
 import unittest
 
@@ -302,7 +301,7 @@ def copy_path(dir_, dst_fs=None):
     for dirpath, _dirnames, filenames in src_fs.walk(dir_):
         dst_fs.makedirs(dirpath)
 
-        filenames = [os.path.join(dirpath, f) for f in filenames
+        filenames = [src_fs.join(dirpath, f) for f in filenames
                      if not f.endswith('test.py')]
         for filename in filenames:
             copy_file(dst_fs, src_fs, filename)

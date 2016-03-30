@@ -92,8 +92,10 @@ def set_user_password(conninfo, credentials, user_id, new_password):
 
     return request.rest_request(conninfo, credentials, method, uri, body=body)
 
-# TODO This user conversion function should be a REST call, but is not yet.
-# Return a user_id from a string that contains either the id or a name
+# Given either an auth_id or a username, return all the information about the
+# user.
+# TODO This should be a REST call, but is not yet.  Return a user_id from a
+# string that contains either the id or a name.
 @request.request
 def get_user_id(conninfo, credentials, value):
     # First, try to parse as an integer
@@ -111,3 +113,12 @@ def get_user_id(conninfo, credentials, value):
             return request.RestResponse(int(user['id']), etag)
 
     raise ValueError('Unable to convert "%s" to a user id' % value)
+
+@request.request
+def unpack_identity(conninfo, credentials, auth_id):
+    auth_id = int(auth_id)
+
+    method = "GET"
+    uri = "/v1/users/" + str(auth_id) + "/unpack-identity"
+
+    return request.rest_request(conninfo, credentials, method, uri)

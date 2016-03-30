@@ -14,6 +14,7 @@ import qumulo.lib.auth
 import qumulo.lib.opts
 import qumulo.lib.log as log
 import qumulo.rest.auth as auth
+from qumulo.commands import auth as auth_commands
 from qumulo.lib.request import NEED_LOGIN_MESSAGE
 
 class LoginCommand(qumulo.lib.opts.Subcommand):
@@ -68,4 +69,18 @@ class WhoAmICommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, _args):
-        print auth.who_am_i(conninfo, credentials)
+        me = auth.who_am_i(conninfo, credentials)
+        user_id = me.lookup('id')
+
+        # Get all related group info
+        group_info_msg = auth_commands.get_user_group_info_msg(
+            conninfo, credentials, user_id)
+
+        # Get all related IDs
+        related_info_msg = \
+            auth_commands.get_expanded_identity_information_for_user(
+                conninfo, credentials, user_id)
+
+        print me
+        print group_info_msg
+        print related_info_msg

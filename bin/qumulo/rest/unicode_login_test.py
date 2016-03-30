@@ -45,11 +45,13 @@ class JoinAdUnicodeStringsRestTest(unittest.TestCase, RestTest):
 
         self.assertCalledWith('/v1/ad/join',
             body={
-                'domain'          : self.a_domain,
-                'user'            : self.a_user,
-                'password'        : self.a_password,
-                'ou'              : self.a_ou,
-                'domain_netbios'  : self.a_netbios
+                'domain'                  : self.a_domain,
+                'user'                    : self.a_user,
+                'password'                : self.a_password,
+                'ou'                      : self.a_ou,
+                'domain_netbios'          : self.a_netbios,
+                'base_dn'                 : '',
+                'use_ad_posix_attributes' : False,
             })
 
     def test_failure_unicode(self):

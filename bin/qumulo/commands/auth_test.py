@@ -27,6 +27,7 @@ class MoUserCommandTest(unittest.TestCase, CommandTest):
             'qumulo.rest.users.list_user',
             'qumulo.rest.users.list_groups_for_user',
             'qumulo.rest.users.modify_user',
+            'qumulo.rest.auth.auth_id_to_all_related_identities',
             )
 
     def mock_call(self, name, *args):
@@ -66,6 +67,12 @@ class MoUserCommandTest(unittest.TestCase, CommandTest):
             'User 10 is a member of following groups: [',
             '    "unused"',
             ']',
+            'Expanded identity information for user 10: [',
+            '    {',
+            '        "id_type": "LOCAL_USER", ',
+            '        "id_value": "billy"',
+            '    }',
+            ']',
             '',
             ])
 
@@ -80,6 +87,12 @@ class MoUserCommandTest(unittest.TestCase, CommandTest):
         self.mock.modify_user.return_value = \
             request.RestResponse(attributes_2, 'etag-2')
 
+        self.mock.auth_id_to_all_related_identities.return_value = \
+            request.RestResponse([{
+            'id_type': 'LOCAL_USER',
+            'id_value': 'billy',
+        }], None)
+
         # Execute command module
         self.assert_command_outputs(expected_stdout,
             '--id', '10', '--name', 'billy-2', '--primary-group', '21')
@@ -88,8 +101,9 @@ class MoUserCommandTest(unittest.TestCase, CommandTest):
             self.mock_call('list_user', 10),
             self.mock_call('modify_user', 10,
                 'billy-2', '21', 'billy-uid-1', 'etag-1'),
-            self.mock_call('list_user', 10),
-            self.mock_call('list_groups_for_user', 10))
+            self.mock_call('list_groups_for_user', 10),
+            self.mock_call('auth_id_to_all_related_identities', 10),
+            self.mock_call('list_user', 10))
 
 if __name__ == '__main__':
     pycheck.main()

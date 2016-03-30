@@ -102,8 +102,7 @@ class GetAclCommand(qumulo.lib.opts.Subcommand):
         elif not args.id and not args.path:
             raise ValueError("Must specify --path or --id")
 
-        print fs.get_acl(conninfo, credentials, args.path,
-            args.id)
+        print fs.get_acl(conninfo, credentials, args.path, args.id)
 
 class SetAclCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_set_acl"
@@ -406,8 +405,14 @@ class TreeWalkCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, args):
         for f, _etag in fs.tree_walk_preorder(conninfo, credentials, args.path):
-            print '%s sz=%s owner=%s group=%s' % (
-                f['path'], f['size'], f['owner'], f['group'])
+            print '%s sz=%s owner=%s group=%s ' \
+                  'owner_id_type=%s owner_id_value=%s ' \
+                  'group_id_type=%s group_id_value=%s' % (
+                f['path'], f['size'], f['owner'],
+                f['group'], f['owner_details']['id_type'],
+                str(f['owner_details']['id_value']),
+                f['group_details']['id_type'],
+                str(f['group_details']['id_value']))
 
 class TreeDeleteCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_delete_tree"

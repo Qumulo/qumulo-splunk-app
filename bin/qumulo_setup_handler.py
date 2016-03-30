@@ -25,24 +25,24 @@ class ConfigHandler(splunk.admin.MConfigHandler):
             for stanza, settings in confDict.items():
                 for key, val in settings.items():
                     if key in ['username'] and val in [None, '']:
-                        val = ''
+                        val = 'admin'
                     if key in ['password'] and val in [None, '']:
-                        val = ''
+                        val = 'admin'
                     if key in ['nodehost'] and val in [None, '']:
                         val = ''
                     if key in ['port'] and val in [None, '']:
-                        val = ''
+                        val = 8000
                     confInfo[stanza].append(key, val)
 
     def handleEdit(self, confInfo):
         if self.callerArgs.data['username'][0] in [None, '']:
-            self.callerArgs.data['username'][0] = '' 
+            self.callerArgs.data['username'][0] = 'admin'
         if self.callerArgs.data['password'][0] in [None, '']:
-            self.callerArgs.data['password'][0] = ''
+            self.callerArgs.data['password'][0] = 'admin'
         if self.callerArgs.data['nodehost'][0] in [None, '']:
             self.callerArgs.data['nodehost'][0] = ''
         if self.callerArgs.data['port'][0] in [None, '']:
-            self.callerArgs.data['port'][0] = ''
+            self.callerArgs.data['port'][0] = 8000
         
 
         self.writeConf('inputs', 'qumulo', self.callerArgs.data)

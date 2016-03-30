@@ -18,7 +18,7 @@
             <type>text</type>
         </input>
         <input field="nodehost">
-            <label>An IP address or hostname of a node in the cluster.Use 'localhost' (the default) when running directly on the node</label>
+            <label>An IP address or hostname of a node in the cluster.</label>
             <type>text</type>
         </input>
    </block>

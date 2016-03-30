@@ -30,17 +30,17 @@ class QumuloClient(object):
         handler.setFormatter(formatter)
         logging.root.addHandler(handler)
 
-        self.username = config.get("username","admin")
-        self.password = config.get("password","admin")
-        self.host = config.get("nodehost","gravytrain")
+        self.username = config.get("username", "admin")
+        self.password = config.get("password", "admin")
+        self.host = config.get("nodehost")
         self.port = int(config.get("port",8000))
-        # self.polling_interval = int(config.get("polling_interval",60))
-        self.polling_interval = 60
+
+        polling_interval_string = config.get("polling_interval", "60")
+        self.polling_interval = int(polling_interval_string)
+
         self.connection = None
         self.credentials = None
         self.config = config
-
-        self.login()
 
     def login(self):
         try:
@@ -52,7 +52,7 @@ class QumuloClient(object):
                     from_login_response(login_results)
         except Exception, excpt:
             logging.error("Error connecting to the REST server: %s" % excpt)
-            sys.exit(2)
+            raise
 
     def path_to_paths(self, local_path):
         if local_path == "/" or local_path == "//" or local_path == "":

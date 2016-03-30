@@ -30,7 +30,7 @@ def poll_ad(conninfo, credentials):
 @request.request
 def join_ad(
         conninfo, credentials, domain, username, password, ou,
-        domain_netbios=None):
+        domain_netbios=None, enable_ldap=False, base_dn=None):
     method = "POST"
     uri = "/v1/ad/join"
 
@@ -42,7 +42,9 @@ def join_ad(
         "domain_netbios": util.parse_ascii(domain_netbios, 'domain_netbios'),
         "user":           util.parse_ascii(username, 'username'),
         "password":       util.parse_ascii(password, 'password'),
-        "ou":             util.parse_ascii(ou, 'ou')
+        "ou":             util.parse_ascii(ou, 'ou'),
+        "use_ad_posix_attributes": enable_ldap,
+        "base_dn":        base_dn or '',
     }
 
     return request.rest_request(conninfo, credentials, method, uri, body=config)
@@ -71,5 +73,47 @@ def leave_ad(conninfo, credentials, domain, username, password):
 def cancel_ad(conninfo, credentials):
     method = "POST"
     uri = "/v1/ad/cancel"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def uid_to_sid_get(conninfo, credentials, uid):
+    method = "GET"
+    uri = "/v1/ad/uids/" + str(uid) + "/sids/"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def sid_to_uid_get(conninfo, credentials, sid):
+    method = "GET"
+    uri = "/v1/ad/sids/" + sid + "/uid"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def sid_to_gid_get(conninfo, credentials, sid):
+    method = "GET"
+    uri = "/v1/ad/sids/" + sid + "/gid"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def gid_to_sid_get(conninfo, credentials, gid):
+    method = "GET"
+    uri = "/v1/ad/gids/" + str(gid) + "/sids/"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def sid_to_expanded_group_sids_get(conninfo, credentials, sid):
+    method = "GET"
+    uri = "/v1/ad/sids/" + sid + "/expanded-groups/"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def clear_cache_post(conninfo, credentials):
+    method = "POST"
+    uri = '/v1/ad/clear-cache'
 
     return request.rest_request(conninfo, credentials, method, uri)

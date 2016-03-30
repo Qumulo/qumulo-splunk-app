@@ -1,4 +1,4 @@
-# Copyright (c) 2012 Qumulo, Inc.
+# Copyright (c) 2016 Qumulo, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -51,3 +51,39 @@ def who_am_i(conninfo, credentials):
 
     return request.rest_request(
         conninfo, credentials, "GET", "/v1/session/who-am-i")
+
+@request.request
+def auth_id_to_all_related_identities(conninfo, credentials, auth_id):
+    method = "GET"
+    uri = "/v1/auth/auth-ids/{}/related-identities/".format(auth_id)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+
+@request.request
+def posix_uid_to_all_related_identities(conninfo, credentials, posix_uid):
+    method = "GET"
+    uri = "/v1/auth/posix-uids/{}/related-identities/".format(posix_uid)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def posix_gid_to_all_related_identities(conninfo, credentials, posix_gid):
+    method = "GET"
+    uri = "/v1/auth/posix-gids/{}/related-identities/".format(posix_gid)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def sid_to_all_related_identities(conninfo, credentials, sid):
+    method = "GET"
+    uri = "/v1/auth/sids/{}/related-identities/".format(sid)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def local_username_to_all_related_identities(conninfo, credentials, username):
+    method = "GET"
+    uri = "/v1/auth/local-username/{}/related-identities/".format(username)
+
+    return request.rest_request(conninfo, credentials, method, uri)

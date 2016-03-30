@@ -12,12 +12,28 @@
 
 import qumulo.lib.request as request
 from qumulo.lib.uri import UriBuilder
+from qumulo.rest import users
 
 @request.request
 def read_fs_stats(conninfo, credentials):
     method = "GET"
     uri = "/v1/file-system"
     return request.rest_request(conninfo, credentials, method, unicode(uri))
+
+def format_output_acl(conninfo, credentials, rest_response):
+    results, etag = rest_response
+    try:
+        def insert_trustee_details(ace):
+            ace['trustee_details'], _etag = \
+                users.unpack_identity(conninfo, credentials, ace['trustee'])
+            return ace
+        results['acl']['aces'] = \
+            [insert_trustee_details(ace) for ace in results['acl']['aces']]
+        return request.RestResponse(results, etag)
+    except request.RequestError:
+        # XXX ezra: Temporary hack to make upgrade tests work, until the
+        # unpack_identity API goes into the upgrade baseline. See QFS-10814.
+        return rest_response
 
 @request.request
 def set_acl(conninfo, credentials, path=None, id_=None, control=None,
@@ -36,8 +52,10 @@ def set_acl(conninfo, credentials, path=None, id_=None, control=None,
 
     config = {'aces': aces, 'control': control}
     method = "PUT"
-    return request.rest_request(conninfo, credentials, method, unicode(uri),
-        body=config, if_match=if_match)
+
+    return format_output_acl(conninfo, credentials, request.rest_request(
+        conninfo, credentials, method, unicode(uri),
+        body=config, if_match=if_match))
 
 @request.request
 def set_attr(conninfo, credentials, mode, owner, group, size,
@@ -117,7 +135,9 @@ def get_acl(conninfo, credentials, path=None, id_=None):
     uri = build_files_uri([ref, "info", "acl"])
 
     method = "GET"
-    return request.rest_request(conninfo, credentials, method, unicode(uri))
+
+    return format_output_acl(conninfo, credentials, request.rest_request(
+        conninfo, credentials, method, unicode(uri)))
 
 @request.request
 def get_attr(conninfo, credentials, path=None, id_=None):
