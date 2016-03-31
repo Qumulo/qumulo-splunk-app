@@ -1,4 +1,4 @@
-# Qumulo App version 1.2.22
+# Qumulo App version 2.0.0
 
 ## Overview
 
@@ -11,6 +11,19 @@ use Splunk to view metrics and create alerts about their Qumulo cluster.
 Qumulo REST API/ python 2.7 wrapper (https://pypi.python.org/pypi?%3Aaction=pkg_edit&name=qumulo_api)
 croniter
 six
+
+## Supported Qumulo Core / Cluster versions
+
+The Qumulo Splunk App is verified to work with:
+
+Qumulo 2.0.0
+Qumulo 1.3.0
+Qumulo 1.2.23
+Qumulo 1.2.22
+Qumulo 1.2.21
+
+Earlier or later version of Qumulo Core may also work with this version of Qumulo Splunk App but have not been
+verified with this version.
 
 ## Open Source Software
 
@@ -33,12 +46,14 @@ Verified with Splunk 6.3
 
 Copy files to $SPLUNK_HOME/etc/apps/qumulo_splunk_app and restart Splunk
 
-## Configuration
+## Installation and Configuration
 
 You'll need to provide hostname, port number and username and password for an account
 with access to Qumulo REST API after installing the app.
 
 You can also configure different poll intervals for each endpoint etc.
+
+**NOTE** that you will need to restart your Splunk server after updating configuration.
 
 ## Splunk Meta Data
 

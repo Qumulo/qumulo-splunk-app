@@ -30,17 +30,17 @@ class QumuloClient(object):
         handler.setFormatter(formatter)
         logging.root.addHandler(handler)
 
-        self.username = config.get("username", "admin")
-        self.password = config.get("password", "admin")
+        self.username = config.get("username")
+        self.password = config.get("password")
         self.host = config.get("nodehost")
-        self.port = int(config.get("port",8000))
-
-        polling_interval_string = config.get("polling_interval", "60")
-        self.polling_interval = int(polling_interval_string)
-
+        self.port = int(config.get("port", 8000))
+        # self.polling_interval = int(config.get("polling_interval",60))
+        self.polling_interval = 60
         self.connection = None
         self.credentials = None
         self.config = config
+
+        self.login()
 
     def login(self):
         try:
@@ -51,8 +51,8 @@ class QumuloClient(object):
             self.credentials = qumulo.lib.auth.Credentials.\
                     from_login_response(login_results)
         except Exception, excpt:
-            logging.error("Error connecting to the REST server: %s" % excpt)
-            raise
+            logging.error("Error logging in to the REST server %{0}: %{1}".format(self.host, excpt))
+            # sys.exit(2)
 
     def path_to_paths(self, local_path):
         if local_path == "/" or local_path == "//" or local_path == "":
@@ -117,7 +117,7 @@ class QumuloClient(object):
                     retry = False
             except Exception, excpt:
                 # login again
-                self.login()
+                logging.error("Error communicating with Qumulo REST server: %s" % excpt)
                 retry = True
 
         if retry:
@@ -159,10 +159,7 @@ class QumuloClient(object):
         big_tree = {}
 
         try:
-
-            api_cli = RestClient(self.host, self.port)
-            api_cli.login(self.username, self.password)
-            iops_data = api_cli.analytics.iops_get()
+            iops_data = self.get_api_response(qumulo.rest.analytics.iops_get)
             ids = {}
 
             for d in iops_data['entries']:
@@ -170,23 +167,22 @@ class QumuloClient(object):
                 if inode_id not in ids:
                     ids[inode_id] = 1
 
-            print "Get IDS"
-
+            # print "Get IDS"
             ids = sorted(ids.keys())
             id_to_path = {}
+
             while len(ids) > 0:
                 fifty_ids = map(str, ids[:100])
-                id_path_arr = api_cli.fs.resolve_paths(ids = fifty_ids)
+                id_path_arr = self.get_api_response(qumulo.rest.fs.resolve_paths, ids=fifty_ids)
                 for d in id_path_arr:
                     if int(d['id']) not in id_to_path:
                         id_to_path[int(d['id'])] = d['path']
                 del ids[:100]
 
-
             raw = {}
             raw_only_dirs = {}
             ips = {}
-            print "Walk ip Entries"
+            # print "Walk ip Entries"
             for d in iops_data['entries']:
                 inode_id = int(d['id'])
                 ip = d["ip"]
@@ -222,7 +218,7 @@ class QumuloClient(object):
             max_level_count = 5
             big_tree = self.build_tree(iops_data, id_to_path, iops_dict, max_level_count)
 
-            print "Build better tree"
+            # print "Build better tree"
             # 5 iops threshold
             thresh = 5
             for level in reversed(range(1,max_level_count+1)):
@@ -244,7 +240,7 @@ class QumuloClient(object):
                     del big_tree[level][path]
 
 
-            print "Done"
+            # print "Done"
         except:
             pass
 
