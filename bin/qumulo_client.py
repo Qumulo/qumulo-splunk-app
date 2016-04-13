@@ -116,7 +116,11 @@ class QumuloClient(object):
                 else:
                     retry = False
             except Exception, excpt:
-                # login again
+
+                if excpt.status_code == 401 or excpt.status_code == 307:
+                     # is it a 307 or 401?  Try to get a new access token
+                    # by logging in again
+                    self.login()
                 logging.error("Error communicating with Qumulo REST server: %s" % excpt)
                 retry = True
 
@@ -134,7 +138,6 @@ class QumuloClient(object):
 
     def get_throughput(self):
         api_begin_time = int(time.time()-self.polling_interval)
-        throughput = qumulo.rest.analytics.time_series_get(self.connection, self.credentials, api_begin_time).data
         throughput = self.get_api_response(qumulo.rest.analytics.time_series_get, api_begin_time=api_begin_time)
         # return only the last/latest reading for each indicator... not all of them.
         results = []
