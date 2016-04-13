@@ -142,9 +142,10 @@ class QumuloClient(object):
         # return only the last/latest reading for each indicator... not all of them.
         results = []
         for result in throughput:
+            last_time = len(result["times"])-1
             last_value = len(result["values"])-1
 
-            result["times"] = [ result["times"][last_value]]
+            result["times"] = [ result["times"][last_time]]
             result["values"] = [ result["values"][last_value]]
             results.append(result)
 
