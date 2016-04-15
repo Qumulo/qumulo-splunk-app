@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import os
@@ -136,14 +137,26 @@ class QumuloClient(object):
         # return qumulo.rest.fs.read_fs_stats(self.connection, self.credentials).data
         return self.get_api_response(qumulo.rest.fs.read_fs_stats)
 
+    def peek(self, iterable):
+        try:
+            first = next(iterable)
+        except StopIteration:
+            return None
+        return first, itertools.chain([first], iterable)
+
     def get_throughput(self):
         api_begin_time = int(time.time()-self.polling_interval)
         throughput = self.get_api_response(qumulo.rest.analytics.time_series_get, api_begin_time=api_begin_time)
+
         # return only the last/latest reading for each indicator... not all of them.
+        if (throughput is None) or (self.peek(iter(throughput)) is None):
+            return []
+
         results = []
 
         for result in throughput:
-            if ("times" in result) and ("values" in result):
+            if (("times" in result) and ("values" in result)) \
+            and ((len(result["times"]) > 0) and (len(result["values"]))) > 0:
                 result["times"] = [ result["times"][-1]]
                 result["values"] = [ result["values"][-1]]
                 results.append(result)
