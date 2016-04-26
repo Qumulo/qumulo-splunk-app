@@ -35,8 +35,7 @@ class QumuloClient(object):
         self.password = config.get("password")
         self.host = config.get("nodehost")
         self.port = int(config.get("port", 8000))
-        # self.polling_interval = int(config.get("polling_interval",60))
-        self.polling_interval = 60
+        self.polling_interval = int(config.get("polling_interval",60))
         self.connection = None
         self.credentials = None
         self.config = config
@@ -118,10 +117,11 @@ class QumuloClient(object):
                     retry = False
             except Exception, excpt:
 
-                if excpt.status_code == 401 or excpt.status_code == 307:
+                if ('status_code' in excpt) and (excpt.status_code == 401 or excpt.status_code == 307):
                      # is it a 307 or 401?  Try to get a new access token
                     # by logging in again
                     self.login()
+                    
                 logging.error("Error communicating with Qumulo REST server: %s" % excpt)
                 retry = True
 

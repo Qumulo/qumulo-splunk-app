@@ -58,8 +58,8 @@ def main(args):
 
     credentials = qumulo.lib.auth.get_credentials(args.credentials_store)
 
-    if args.request:
-        args.request.main(conninfo, credentials, args)
+    if args.subcommand:
+        args.subcommand.main(conninfo, credentials, args)
 
 def qq_main(argz=None):
     try:
