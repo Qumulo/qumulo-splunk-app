@@ -20,6 +20,12 @@ def bool_from_string(value):
         return False
     raise ValueError('Unable to convert "%s" to boolean' % value)
 
+def are_you_sure():
+    answer = raw_input('yes or no? ').lower()
+    while answer != 'yes' and answer != 'no':
+        answer = raw_input('Yes or No? ').strip().lower()
+    return answer == 'yes'
+
 # Join two paths, force basename to be relative
 def path_join(dirname, basename):
     if basename.startswith('/'):

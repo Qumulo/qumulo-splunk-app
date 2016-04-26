@@ -29,13 +29,17 @@ def poll_ad(conninfo, credentials):
 
 @request.request
 def join_ad(
-        conninfo, credentials, domain, username, password, ou,
-        domain_netbios=None, enable_ldap=False, base_dn=None):
+        conninfo, credentials, domain, username, password,
+        ou=None, domain_netbios=None, enable_ldap=False, base_dn=None):
     method = "POST"
     uri = "/v1/ad/join"
 
+    if ou is None:
+        ou = ""
     if domain_netbios is None:
         domain_netbios = ""
+    if base_dn is None:
+        base_dn = ""
 
     config = {
         "domain":         util.parse_ascii(domain, 'domain'),
@@ -44,7 +48,7 @@ def join_ad(
         "password":       util.parse_ascii(password, 'password'),
         "ou":             util.parse_ascii(ou, 'ou'),
         "use_ad_posix_attributes": enable_ldap,
-        "base_dn":        base_dn or '',
+        "base_dn":        util.parse_ascii(base_dn, 'base_dn'),
     }
 
     return request.rest_request(conninfo, credentials, method, uri, body=config)

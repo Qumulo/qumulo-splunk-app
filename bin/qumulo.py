@@ -280,9 +280,8 @@ def run(client):
 
     #polling can be a time interval or CRON pattern
     polling_interval_string = config.get("polling_interval","60")
+    polling_interval = int(polling_interval_string)
     #defaults
-    polling_interval = 60
-    polling_type = 'interval'
 
     if polling_interval_string.isdigit():
         polling_type = 'interval'
@@ -292,14 +291,11 @@ def run(client):
         cron_start_date = datetime.now()
         cron_iter = croniter(polling_interval_string, cron_start_date)
 
+    logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))
+
     try:
 
         while True:
-
-            if polling_type == 'cron':
-                next_cron_firing = cron_iter.get_next(datetime)
-                while get_current_datetime_for_cron() != next_cron_firing:
-                    time.sleep(float(10))
 
             if(endpoint_to_poll == "iops"):
                 process_iops()
@@ -315,6 +311,10 @@ def run(client):
 
             if polling_type == 'interval':
                 time.sleep(float(polling_interval))
+            elif polling_type == 'cron':
+                next_cron_firing = cron_iter.get_next(datetime)
+                while get_current_datetime_for_cron() != next_cron_firing:
+                    time.sleep(float(polling_interval))
 
     except RuntimeError,e:
         logging.error("Looks like an error: %s" % str(e))

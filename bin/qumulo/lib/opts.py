@@ -12,13 +12,12 @@
 
 import argparse
 import getpass
-import warnings
 
-def import_commands():
-    warnings.warn("import_commands() is no longer necessary")
-
-def import_rest():
-    warnings.warn("import_rest() is no longer necessary")
+try:
+    # use argcomplete if available
+    import argcomplete
+except ImportError:
+    argcomplete = None
 
 class Subcommand(object):
     @staticmethod
@@ -60,8 +59,10 @@ def parse_options(parser, argv):
         cls.options(subparser)
 
         # Set the subcommand class
-        subparser.set_defaults(request=cls)
+        subparser.set_defaults(subcommand=cls)
 
+    if argcomplete is not None:
+        argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
 
 def read_password(user=None, prompt=None):
