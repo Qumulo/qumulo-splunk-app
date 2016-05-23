@@ -42,7 +42,7 @@ SCHEME = """<scheme>
     <description>Poll data from the Qumulo REST API</description>
     <use_external_validation>true</use_external_validation>
     <streaming_mode>xml</streaming_mode>
-    <use_single_instance>false</use_single_instance>
+    <use_single_instance>true</use_single_instance>
 
     <endpoint>
         <args>
@@ -278,43 +278,16 @@ def run(client):
         logging.error("No polling endpoint was specified , exiting.")
         sys.exit(2)
 
-    #polling can be a time interval or CRON pattern
-    polling_interval_string = config.get("polling_interval","60")
-    polling_interval = int(polling_interval_string)
-    #defaults
-
-    if polling_interval_string.isdigit():
-        polling_type = 'interval'
-        polling_interval=int(polling_interval_string)
-    else:
-        polling_type = 'cron'
-        cron_start_date = datetime.now()
-        cron_iter = croniter(polling_interval_string, cron_start_date)
-
-    logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))
-
     try:
 
-        while True:
+        if(endpoint_to_poll == "capacity"):
+            process_capacity()
+        elif(endpoint_to_poll == "iops"):
+            process_iops()
+        elif(endpoint_to_poll == "throughput"):
+            process_throughput()
 
-            if(endpoint_to_poll == "iops"):
-                process_iops()
-                continue
-
-            if(endpoint_to_poll == "capacity"):
-                process_capacity()
-                continue
-
-            if(endpoint_to_poll == "throughput"):
-                process_throughput()
-                continue
-
-            if polling_type == 'interval':
-                time.sleep(float(polling_interval))
-            elif polling_type == 'cron':
-                next_cron_firing = cron_iter.get_next(datetime)
-                while get_current_datetime_for_cron() != next_cron_firing:
-                    time.sleep(float(polling_interval))
+        # logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))                
 
     except RuntimeError,e:
         logging.error("Looks like an error: %s" % str(e))
