@@ -157,7 +157,7 @@ def process_iops():
         logging.error("Exception performing request for IOPS: %s" % str(excpt))
         return
 
-def process_capacity():
+def process_capacity(client):
     try:
         capacity = client.get_capacity()
     except RequestError, excpt:
@@ -273,25 +273,28 @@ def run(client):
     STANZA = config.get("name")
 
     #logical name of endpoint to poll
-    endpoint_to_poll=config.get("endpoint_to_poll","")
-    if endpoint_to_poll == "":
-        logging.error("No polling endpoint was specified , exiting.")
-        sys.exit(2)
+    # endpoint_to_poll=config.get("endpoint_to_poll","")
+    # logging.error("In run method, endpoint to poll is : %s" % endpoint_to_poll)
+    # if endpoint_to_poll == "":
+    #     logging.error("No polling endpoint was specified , exiting.")
+    #     sys.exit(2)
 
-    try:
+    process_capacity(client)
+    return
+    # try:
 
-        if(endpoint_to_poll == "capacity"):
-            process_capacity()
-        elif(endpoint_to_poll == "iops"):
-            process_iops()
-        elif(endpoint_to_poll == "throughput"):
-            process_throughput()
+    #     if(endpoint_to_poll == "capacity"):
+    #         process_capacity()
+    #     elif(endpoint_to_poll == "iops"):
+    #         process_iops()
+    #     elif(endpoint_to_poll == "throughput"):
+    #         process_throughput()
 
-        # logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))                
+    #     # logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))                
 
-    except RuntimeError,e:
-        logging.error("Looks like an error: %s" % str(e))
-        sys.exit(2)
+    # except RuntimeError,e:
+    #     logging.error("Looks like an error: %s" % str(e))
+    #     sys.exit(2)
 
 
 if __name__ == '__main__':
