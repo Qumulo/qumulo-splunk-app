@@ -1,5 +1,8 @@
 [qumulo_splunk_app://<name>]
-*Generates events containing a random floating point number.
+*Manage Qumulo clusters using Splunk.
 
-min = <value>
-max = <value>
+username = <value>
+password = <value>
+nodehost = <value>
+port = <value>
+polling_interval = <value>

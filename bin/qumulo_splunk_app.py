@@ -74,22 +74,16 @@ class QumuloScript(Script):
         scheme.use_external_validation = True
         scheme.use_single_instance = True
 
-        min_argument = Argument("min")
-        min_argument.title = "Minimum"
-        min_argument.data_type = Argument.data_type_number
-        min_argument.description = "Minimum random number to be produced by this input."
-        min_argument.required_on_create = True
+        username_argument = Argument("username")
+        username_argument.title = "Username"
+        username_argument.data_type = Argument.data_type_string
+        username_argument.description = "username for authentication , defaults to admin"
+        username_argument.required_on_create = True
+
         # If you are not using external validation, you would add something like:
         #
         # scheme.validation = "min > 0"
-        scheme.add_argument(min_argument)
-
-        max_argument = Argument("max")
-        max_argument.title = "Maximum"
-        max_argument.data_type = Argument.data_type_number
-        max_argument.description = "Maximum random number to be produced by this input."
-        max_argument.required_on_create = True
-        scheme.add_argument(max_argument)
+        scheme.add_argument(username_argument)
 
         return scheme
 
@@ -109,12 +103,8 @@ class QumuloScript(Script):
         """
         # Get the parameters from the ValidationDefinition object,
         # then typecast the values as floats
-        minimum = float(validation_definition.parameters["min"])
-        maximum = float(validation_definition.parameters["max"])
-
-        if minimum >= maximum:
-            raise ValueError("min must be less than max; found min=%f, max=%f" % minimum, maximum)
-
+        pass
+ 
     def stream_events(self, inputs, ew):
         """This function handles all the action: splunk calls this modular input
         without arguments, streams XML describing the inputs to stdin, and waits
@@ -130,13 +120,13 @@ class QumuloScript(Script):
         # Go through each input for this modular input
         for input_name, input_item in inputs.inputs.iteritems():
             # Get the values, cast them as floats
-            minimum = float(input_item["min"])
-            maximum = float(input_item["max"])
+            minimum = float(42)
+            maximum = float(58)
 
             # Create an Event object, and set its data fields
             event = Event()
             event.stanza = input_name
-            event.data = "number=\"%s\"" % str(random.uniform(minimum, maximum))
+            event.data = "username is " + input_item["username"]
 
             # Tell the EventWriter to write this event
             ew.write_event(event)
