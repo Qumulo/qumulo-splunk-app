@@ -1,5 +1,0 @@
-# Specified write permissions to admin and qumuloadmin roles only
-[]
-access = read : [qumulouser,admin,qumuloadmin], write : [ admin, qumuloadmin ]
-export = none
-version = 6.3.2
