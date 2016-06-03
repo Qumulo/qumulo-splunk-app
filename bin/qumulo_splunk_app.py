@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2013 Splunk, Inc.
+# Copyright 2016 Qumulo, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"): you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,32 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import random, sys
+from datetime import datetime
+import json
+import math
+import os
+import random
+import sys
+import logging
+import time
+import xml.dom.minidom
+
+#  qumulo_client wraps all of the Qumulo REST API interactions
+from qumulo_client import QumuloClient
+from qumulo.lib.request import RequestError
+
+
+SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
+STANZA = None
+EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
+
+# Import any Eggs
+for filename in os.listdir(EGG_DIR):
+    if filename.endswith(".egg"):
+        sys.path.append(EGG_DIR + filename)
+
+from croniter import croniter
+
 
 from splunklib.modularinput import *
 
