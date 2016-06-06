@@ -41,6 +41,9 @@ class SMBAddShareCommand(qumulo.lib.opts.Subcommand):
             help="Share cannot be used to write to the file system")
         parser.add_argument("--allow-guest-access", type=bool, default=False,
             help="Allow guest access to this share")
+        parser.add_argument("--access-based-enumeration-enabled",
+            type=bool, default=False,
+            help="Enable Access-based Enumeration on this share")
         parser.add_argument("--create-fs-path", action="store_true",
             help="Creates the specified file system path if it does not exist")
 
@@ -48,7 +51,8 @@ class SMBAddShareCommand(qumulo.lib.opts.Subcommand):
     def main(conninfo, credentials, args):
         print smb.smb_add_share(conninfo, credentials, args.name,
             args.fs_path, args.description, args.read_only,
-            args.allow_guest_access, args.create_fs_path)
+            args.allow_guest_access, args.create_fs_path,
+            args.access_based_enumeration_enabled)
 
 class SMBListShareCommand(qumulo.lib.opts.Subcommand):
     NAME = "smb_list_share"
@@ -79,8 +83,11 @@ class SMBModShareCommand(qumulo.lib.opts.Subcommand):
             help="Change description of this share")
         parser.add_argument("--read-only", type=str, default=None,
             help="Change read only")
-        parser.add_argument("--allow-guest-access", type=bool, default=False,
+        parser.add_argument("--allow-guest-access", type=str, default=None,
             help="Change guest access to this share")
+        parser.add_argument("--access-based-enumeration-enabled",
+            type=str, default=None,
+            help="Change if Access-based Enumeration is enabled on this share")
         parser.add_argument("--create-fs-path", action="store_true",
             help="Creates the specified file system path if it does not exist")
 
@@ -103,7 +110,12 @@ class SMBModShareCommand(qumulo.lib.opts.Subcommand):
             share_info['read_only'] = \
                 qumulo.lib.util.bool_from_string(args.read_only)
         if args.allow_guest_access is not None:
-            share_info['allow_guest_access'] = args.allow_guest_access
+            share_info['allow_guest_access'] = \
+                qumulo.lib.util.bool_from_string(args.allow_guest_access)
+        if args.access_based_enumeration_enabled is not None:
+            share_info['access_based_enumeration_enabled'] = \
+                qumulo.lib.util.bool_from_string(
+                    args.access_based_enumeration_enabled)
 
         print smb.smb_modify_share(conninfo, credentials,
             **share_info)

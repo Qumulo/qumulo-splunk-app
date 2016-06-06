@@ -16,11 +16,11 @@ from qumulo.lib.uri import UriBuilder
 @request.request
 def cluster_config_get(conninfo, credentials):
     method = "GET"
-    uri = str(UriBuilder(path="/v1/debug/config/cluster_config"))
+    uri = str(UriBuilder(path="/v1/debug/config/cluster-config"))
     return request.rest_request(conninfo, credentials, method, uri)
 
 @request.request
 def system_config_get(conninfo, credentials):
     method = "GET"
-    uri = str(UriBuilder(path="/v1/debug/config/system_config"))
+    uri = str(UriBuilder(path="/v1/debug/config/system-config"))
     return request.rest_request(conninfo, credentials, method, uri)

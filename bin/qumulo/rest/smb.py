@@ -24,7 +24,8 @@ def smb_list_shares(conninfo, credentials):
 def smb_add_share(conninfo, credentials,
                           share_name, fs_path, description,
                           read_only=False, allow_guest_access=False,
-                          allow_fs_path_create=False):
+                          allow_fs_path_create=False,
+                          access_based_enumeration_enabled=False):
     method = "POST"
     allow_fs_path_create_ = "true" if allow_fs_path_create else "false"
     uri = "/v1/smb/shares/?allow-fs-path-create=%s" % allow_fs_path_create_
@@ -34,7 +35,9 @@ def smb_add_share(conninfo, credentials,
         'fs_path':            unicode(fs_path),
         'description':        unicode(description),
         'read_only':          bool(read_only),
-        'allow_guest_access': bool(allow_guest_access)
+        'allow_guest_access': bool(allow_guest_access),
+        'access_based_enumeration_enabled': \
+            bool(access_based_enumeration_enabled)
     }
 
     return request.rest_request(conninfo, credentials, method, uri,
@@ -52,7 +55,8 @@ def smb_list_share(conninfo, credentials, id_):
 @request.request
 def smb_modify_share(conninfo, credentials, id_, share_name,
         fs_path, description, read_only, allow_guest_access,
-        allow_fs_path_create=False, if_match=None):
+        allow_fs_path_create=False, if_match=None,
+        access_based_enumeration_enabled=None):
     id_ = unicode(id_)
     allow_fs_path_create_ = "true" if allow_fs_path_create else "false"
 
@@ -70,6 +74,12 @@ def smb_modify_share(conninfo, credentials, id_, share_name,
         'read_only':          bool(read_only),
         'allow_guest_access': bool(allow_guest_access)
     }
+
+    # "ABE enabled" is an optional field. It may be absent if we use this client
+    # code with the clusters running previous versions of qfsd.
+    if access_based_enumeration_enabled is not None:
+        share_info['access_based_enumeration_enabled'] = \
+            bool(access_based_enumeration_enabled)
 
     return request.rest_request(conninfo, credentials, method, uri,
         body=share_info, if_match=if_match)

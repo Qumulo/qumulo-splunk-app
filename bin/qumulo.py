@@ -1,6 +1,18 @@
-'''
-Modular Input Script for Qumulo
-'''
+#!/usr/bin/env python
+#
+# Copyright 2016 Qumulo, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
 from datetime import datetime
 import json
@@ -28,288 +40,180 @@ for filename in os.listdir(EGG_DIR):
 from croniter import croniter
 
 
-#set up logging
-logging.root
-logging.root.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s %(message)s')
-#with zero args , should go to STD ERR
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logging.root.addHandler(handler)
+from splunklib.modularinput import *
 
-SCHEME = """<scheme>
-    <title>Qumulo</title>
-    <description>Poll data from the Qumulo REST API</description>
-    <use_external_validation>true</use_external_validation>
-    <streaming_mode>xml</streaming_mode>
-    <use_single_instance>true</use_single_instance>
+class QumuloScript(Script):
+    """All modular inputs should inherit from the abstract base class Script
+    from splunklib.modularinput.script.
+    They must override the get_scheme and stream_events functions, and,
+    if the scheme returned by get_scheme has Scheme.use_external_validation
+    set to True, the validate_input function.
+    """
+    def get_scheme(self):
+        """When Splunk starts, it looks for all the modular inputs defined by
+        its configuration, and tries to run them with the argument --scheme.
+        Splunkd expects the modular inputs to print a description of the
+        input in XML on stdout. The modular input framework takes care of all
+        the details of formatting XML and printing it. The user need only
+        override get_scheme and return a new Scheme object.
 
-    <endpoint>
-        <args>
-            <arg name="name">
-                <title>Qumulo input name</title>
-                <description>Name of this Qumulo input</description>
-            </arg>
+        :return: scheme, a Scheme object
+        """
+        # "random_numbers" is the name Splunk will display to users for this input.
+        scheme = Scheme("Qumulo Splunk App")
 
-            <arg name="username">
-                <title>Username</title>
-                <description>username for authentication , defaults to admin</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>true</required_on_create>
-            </arg>
-            <arg name="password">
-                <title>Password</title>
-                <description>password for authentication , defaults to admin</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>true</required_on_create>
-            </arg>
-            <arg name="nodehost">
-                <title>Host</title>
-                <description>An ip address or hostname of a node in the cluster; use 'localhost' when running directly on the node</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>true</required_on_create>
-            </arg>
-            <arg name="port">
-                <title>Port</title>
-                <description>port number for the API server port, defaults to 8000 </description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>true</required_on_create>
-            </arg>
+        scheme.description = "Manage Qumulo Clusters using Splunk."
+        # If you set external validation to True, without overriding validate_input,
+        # the script will accept anything as valid. Generally you only need external
+        # validation if there are relationships you must maintain among the
+        # parameters, such as requiring min to be less than max in this example,
+        # or you need to check that some resource is reachable or valid.
+        # Otherwise, Splunk lets you specify a validation string for each argument
+        # and will run validation internally using that string.
+        scheme.use_external_validation = True
+        scheme.use_single_instance = True
 
-            <arg name="endpoint_to_poll">
-                <title>Endpoint</title>
-                <description>Qumulo REST endpoint to poll</description>
-                <required_on_edit>true</required_on_edit>
-                <required_on_create>true</required_on_create>
-            </arg>
+        username_argument = Argument("username")
+        username_argument.title = "Username"
+        username_argument.data_type = Argument.data_type_string
+        username_argument.description = "Username for authentication , defaults to admin"
+        username_argument.required_on_create = True
+        username_argument.required_on_edit = False
+        # If you are not using external validation, you would add something like:
+        #
+        # scheme.validation = "min > 0"
+        scheme.add_argument(username_argument)
 
-            <arg name="request_body">
-                <title>Custom Request Body</title>
-                <description>Request body payload for POST and PUT</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>false</required_on_create>
-            </arg>
+        password_argument = Argument("password")
+        password_argument.title = "Password"
+        password_argument.data_type = Argument.data_type_string
+        password_argument.description = "Password for authentication , defaults to admin"
+        password_argument.required_on_create = True
+        password_argument.required_on_edit = False
+        scheme.add_argument(password_argument)
 
-            <arg name="request_headers">
-                <title>Custom Request Headers</title>
-                <description>in format prop=value,prop2=value2</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>false</required_on_create>
-            </arg>
-            <arg name="request_url_args">
-                <title>Custom Request URL Args</title>
-                <description>in format arg=value,arg2=value2</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>false</required_on_create>
-            </arg>
+        nodehost_argument = Argument("nodehost")
+        nodehost_argument.title = "Host"
+        nodehost_argument.data_type = Argument.data_type_string
+        nodehost_argument.description = "Cluster hostname or IP address"
+        nodehost_argument.required_on_create = True
+        nodehost_argument.required_on_edit = False
+        scheme.add_argument(nodehost_argument)
 
-            <arg name="polling_interval">
-                <title>Polling Interval</title>
-                <description>Interval time in seconds or a CRON pattern to poll the endpoint</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>false</required_on_create>
-            </arg>
+        port_argument = Argument("port")
+        port_argument.title = "Port"
+        port_argument.data_type = Argument.data_type_number
+        port_argument.description = "Port number for Cluster API access, defaults to 8000"
+        port_argument.required_on_create = True
+        port_argument.required_on_edit = False
+        scheme.add_argument(port_argument)
 
-            <arg name="delimiter">
-                <title>Delimiter</title>
-                <description>Delimiter to use for any multi "key=value" field inputs</description>
-                <required_on_edit>false</required_on_edit>
-                <required_on_create>false</required_on_create>
-            </arg>
+        return scheme
 
-        </args>
-    </endpoint>
-</scheme>
-"""
+    def validate_input(self, validation_definition):
+        """In this example we are using external validation to verify that min is
+        less than max. If validate_input does not raise an Exception, the input is
+        assumed to be valid. Otherwise it prints the exception as an error message
+        when telling splunkd that the configuration is invalid.
 
-def get_current_datetime_for_cron():
-    current_dt = datetime.now()
-    #dont need seconds/micros for cron
-    current_dt = current_dt.replace(second=0, microsecond=0)
-    return current_dt
+        When using external validation, after splunkd calls the modular input with
+        --scheme to get a scheme, it calls it again with --validate-arguments for
+        each instance of the modular input in its configuration files, feeding XML
+        on stdin to the modular input to do validation. It is called the same way
+        whenever a modular input's configuration is edited.
 
-def process_throughput():
-    try:
-        throughput = client.get_throughput()
-    except RequestError, excpt:
-        logging.error("Exception performing request for Throughput: %s" % str(excpt))
-        return
+        :param validation_definition: a ValidationDefinition object
+        """
+        # Get the parameters from the ValidationDefinition object,
+        # then typecast the values as floats
+        pass
+ 
+    def stream_events(self, inputs, ew):
+        """This function handles all the action: splunk calls this modular input
+        without arguments, streams XML describing the inputs to stdin, and waits
+        for XML on stdout describing events.
 
-    for entry in throughput:
-        for i in range(len(entry['values'])):
-            log_entry = {}
-            if "throughput" in entry['id']:
-                log_entry['metric'] = entry['id']
-                log_entry['time'] = entry['times'][i]
-                log_entry['value'] = entry['values'][i]
-                print_xml_stream(json.dumps(log_entry))
+        If you set use_single_instance to True on the scheme in get_scheme, it
+        will pass all the instances of this input to a single instance of this
+        script.
 
+        :param inputs: an InputDefinition object
+        :param ew: an EventWriter object
+        """
 
-def process_iops():
+        # Go through each input for this modular input
+        for input_name, input_item in inputs.inputs.iteritems():
 
-    try:
-        iops = client.get_iops()
+            if input_item['username'] is not None:
+                # Create a Qumulo client
+                client = QumuloClient(input_item)
 
-        for op in iops:
-            print_xml_stream(json.dumps(op))
+                if input_item["endpoint_to_poll"] == "throughput":
+                    result = self.process_throughput(ew, input_name, client)
+                elif input_item["endpoint_to_poll"] == "capacity":
+                    result = self.process_capacity(ew, input_name, client)
+                elif input_item["endpoint_to_poll"] == "iops":
+                    result = self.process_iops(ew, input_name, client)
 
-    except RequestError, excpt:
-        logging.error("Exception performing request for IOPS: %s" % str(excpt))
-        return
+    def process_iops(self, ew, input_name, client):
 
-def process_capacity(client):
-    try:
-        capacity = client.get_capacity()
-    except RequestError, excpt:
-        logging.error("Exception performing request for Capacity: %s" % str(excpt))
-        return
+        try:
+            iops = client.get_iops()
 
-    cap = {}
-    cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/math.pow(1024,3))
-    cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/math.pow(1024,3))
-    cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/math.pow(1024,3))
-    print_xml_stream(json.dumps(cap))
+            for op in iops:
+                # print_xml_stream(json.dumps(op))
+                # Create an Event object, and set its data fields
+                event = Event()
+                event.stanza = input_name
+                event.data = json.dumps(op)
+                ew.write_event(event)
 
-# prints validation error data to be consumed by Splunk
-def print_error(s):
-    print "<error><message>%s</message></error>" % encodeXMLText(s)
+        except RequestError, excpt:
+            logging.error("Exception performing request for IOPS: %s" % str(excpt))
+            return
 
-# prints XML stream
-def print_xml_stream(s):
-    print "<stream><event unbroken=\"1\"><data>%s</data><done/></event></stream>" % encodeXMLText(s)
+    def process_capacity(self, ew, input_name, client):
+        try:
+            capacity = client.get_capacity()
+        except RequestError, excpt:
+            logging.error("Exception performing request for Capacity: %s" % str(excpt))
+            return
 
-def encodeXMLText(text):
-    text = text.replace("&", "&amp;")
-    text = text.replace("\"", "&quot;")
-    text = text.replace("'", "&apos;")
-    text = text.replace("<", "&lt;")
-    text = text.replace(">", "&gt;")
-    text = text.replace("\n", "")
-    return text
+        cap = {}
+        cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/math.pow(1024,3))
+        cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/math.pow(1024,3))
+        cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/math.pow(1024,3))
+        # print_xml_stream(json.dumps(cap))
+        event = Event()
+        event.stanza = input_name
+        event.data = json.dumps(cap)
+        ew.write_event(event)
 
-def usage():
-    print "usage: %s [--scheme|--validate-arguments]"
-    logging.error("Incorrect Program Usage")
-    sys.exit(2)
+    def process_throughput(self, ew, input_name, client):
+        try:
+            throughput = client.get_throughput()
+        except RequestError, excpt:
+            logging.error("Exception performing request for Throughput: %s" % str(excpt))
+            return
 
-def do_scheme():
-    print SCHEME
-
-def validate_conf(config, key):
-    if key not in config:
-        raise Exception, "Invalid configuration received from Splunk: key '%s' is missing." % key
-
-#read XML configuration passed from splunkd
-def get_config():
-    config = {}
-
-    try:
-        # read everything from stdin
-        config_str = sys.stdin.read()
-
-        # parse the config XML
-        doc = xml.dom.minidom.parseString(config_str)
-        root = doc.documentElement
-        conf_node = root.getElementsByTagName("configuration")[0]
-        if conf_node:
-            logging.debug("XML: found configuration")
-            stanza = conf_node.getElementsByTagName("stanza")[0]
-            if stanza:
-                stanza_name = stanza.getAttribute("name")
-                if stanza_name:
-                    logging.debug("XML: found stanza " + stanza_name)
-                    config["name"] = stanza_name
-
-                    params = stanza.getElementsByTagName("param")
-                    for param in params:
-                        param_name = param.getAttribute("name")
-                        logging.debug("XML: found param '%s'" % param_name)
-                        if param_name and param.firstChild and \
-                           param.firstChild.nodeType == param.firstChild.TEXT_NODE:
-                            data = param.firstChild.data
-                            config[param_name] = data
-                            logging.debug("XML: '%s' -> '%s'" % (param_name, data))
-
-        checkpnt_node = root.getElementsByTagName("checkpoint_dir")[0]
-        if checkpnt_node and checkpnt_node.firstChild and \
-           checkpnt_node.firstChild.nodeType == checkpnt_node.firstChild.TEXT_NODE:
-            config["checkpoint_dir"] = checkpnt_node.firstChild.data
-
-        if not config:
-            raise Exception, "Invalid configuration received from Splunk."
-
-        # just some validation: make sure these keys are present (required)
-    except Exception, e:
-        raise Exception, "Error getting Splunk configuration via STDIN: %s" % str(e)
-
-    return config
-
-def validate_config(client):
-    '''
-    Validate that we have enough information to access the cluster before starting.
-    At minimum a hostname must be provided.  We will default username, password
-    and port number to use if not provided.  But all must be present after init.
-    @param client:
-    @return:
-    '''
-    # logging.error("validate_config: config is {0}".format(client.config))
-
-    if not client.host:
-        logging.error("validate_config: No host specified, existing....")
-        sys.exit(1)
-
-    try:
-        client.login()
-    except Exception,e:
-      logging.error("validate_config: Invalid configuration specified: %s" % str(e))
-      sys.exit(1)
-
-def run(client):
-
-    validate_config(client)
-
-    #setup some globals
-    global STANZA
-    STANZA = config.get("name")
-
-    #logical name of endpoint to poll
-    # endpoint_to_poll=config.get("endpoint_to_poll","")
-    # logging.error("In run method, endpoint to poll is : %s" % endpoint_to_poll)
-    # if endpoint_to_poll == "":
-    #     logging.error("No polling endpoint was specified , exiting.")
-    #     sys.exit(2)
-
-    process_capacity(client)
-    return
-    # try:
-
-    #     if(endpoint_to_poll == "capacity"):
-    #         process_capacity()
-    #     elif(endpoint_to_poll == "iops"):
-    #         process_iops()
-    #     elif(endpoint_to_poll == "throughput"):
-    #         process_throughput()
-
-    #     # logging.error("polling type:%s endpoint:%s polling_interval:%s", polling_type, endpoint_to_poll, str(polling_interval))                
-
-    # except RuntimeError,e:
-    #     logging.error("Looks like an error: %s" % str(e))
-    #     sys.exit(2)
+        for entry in throughput:
+            for i in range(len(entry['values'])):
+                log_entry = {}
+                if "throughput" in entry['id']:
+                    log_entry['metric'] = entry['id']
+                    log_entry['time'] = entry['times'][i]
+                    log_entry['value'] = entry['values'][i]
+                    # print_xml_stream(json.dumps(log_entry))
+                    event = Event()
+                    event.stanza = input_name
+                    event.data = json.dumps(log_entry)
+                    ew.write_event(event)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--scheme":
-            do_scheme()
-        elif sys.argv[1] == "--validate-arguments":
-            print "Arguments are validated by logging in to cluster via API."
-        elif sys.argv[1] == "--test":
-            print 'No tests for the scheme present'
-        else:
-            print 'You giveth weird arguments'
-    else:
-        # off we go....
-        config = get_config()
-        client = QumuloClient(config)
-        run(client)
-    sys.exit(0)
+
+
+
+
+
+if __name__ == "__main__":
+    sys.exit(QumuloScript().run(sys.argv))

@@ -58,61 +58,6 @@ def encode_to_ascii(s):
     # we ignore the non-ASCII characters.
     return unicode(s).encode('ascii', 'ignore')
 
-class HTTPSConnectionWrapped(httplib.HTTPSConnection):
-
-    # JIRA-4939 timeout value (seconds).
-    MACOS_SOCKET_BUG_WORKAROUND_TIMEOUT = 20
-
-    def connect(self):
-
-        # JIRA-4939: Bug in MacOS sockets.
-        #
-        # There exists a bug in the MacOS 10.9 socket stack where unaccepted
-        # child sockets are not properly reset / closed when the listening
-        # socket is closed (during a restart of the HTTP server).
-        #
-        # This leaves the client waiting on a response from a socket which
-        # hasn't been accepted, and can never be accepted, at the other end,
-        # until the entire client test times out.
-        #
-        # The way we work around this is to set a timeout on the underlying
-        # socket whilst waiting for a response to our original request (the
-        # connect() and initial send() succeed because the kernel TCP stack
-        # handles this much), and catch the timeout at a higher level where
-        # we can retry the request.
-        #
-        # This is a nasty hack. We should really stopping pushing this crap
-        # into the codebase just to support a non-production development
-        # platform.
-
-        if sys.platform != 'darwin':
-            return httplib.HTTPSConnection.connect(self)
-
-        old_timeout = self.timeout
-
-        if not old_timeout:
-            self.timeout = self.MACOS_SOCKET_BUG_WORKAROUND_TIMEOUT
-
-        while True:
-            # Let connection timeouts propagate back to the caller, but
-            # catch any encountered during the SSL handshake.
-            # We're really just replicating the code in
-            # HTTPSConnection.connect() here (both lines of it).
-
-            sock = socket.create_connection((self.host, self.port),
-                                            self.timeout, self.source_address)
-
-            try:
-                self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
-            except socket.timeout:
-                log.info("JIRA-4939 during HTTPS connect, retrying...")
-            else:
-                break
-
-        self.timeout = old_timeout
-        self.sock.settimeout(old_timeout
-            if old_timeout != socket._GLOBAL_DEFAULT_TIMEOUT else None)
-
 class Connection(object):
     def __init__(self, host, port, chunked=DEFAULT_CHUNKED,
             chunk_size=DEFAULT_CHUNK_SIZE_BYTES, timeout=None):
@@ -126,15 +71,15 @@ class Connection(object):
         self.timeout = timeout
 
     def _get_connection(self, port=None):
-        connection_kwargs = { 'timeout': self.timeout }
+        kwargs = {'timeout': self.timeout}
         if isinstance(port, int):
-            connection_kwargs['source_address'] = ('localhost', port)
+            kwargs['source_address'] = ('localhost', port)
 
         # US956: support for SSL updates in python 2.7.9
         if hasattr(ssl, 'SSLContext') and hasattr(ssl, 'PROTOCOL_TLSv1_2'):
-            connection_kwargs['context'] = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            kwargs['context'] = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 
-        return HTTPSConnectionWrapped(self.host, self.port, **connection_kwargs)
+        return httplib.HTTPSConnection(self.host, self.port, **kwargs)
 
     def connect_backdoor(self):
         ports = range(PRIV_PORT_BEG, PRIV_PORT_END)

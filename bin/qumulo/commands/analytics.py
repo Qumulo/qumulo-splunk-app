@@ -30,7 +30,8 @@ class GetTimeSeriesCommand(qumulo.lib.opts.Subcommand):
 
 class GetIopsCommand(qumulo.lib.opts.Subcommand):
     NAME = "iops_get"
-    DESCRIPTION = "Get the sampled iops from the cluster"
+    DESCRIPTION = "Get the sampled iops from the cluster. This command is " \
+                  "DEPRECATED in favor of current_activity_get."
 
     @staticmethod
     def options(parser):
@@ -42,6 +43,27 @@ class GetIopsCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, args):
         print analytics.iops_get(conninfo, credentials, args.type)
+
+class GetCurrentActivityCommand(qumulo.lib.opts.Subcommand):
+    NAME = "current_activity_get"
+    DESCRIPTION = "Get the current sampled IOP and throughput rates"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument(
+            '-t', '--type', type=str, default=None,
+            choices=[
+                'file-iops-read',
+                'file-iops-write',
+                'metadata-iops-read',
+                'metadata-iops-write',
+                'file-throughput-read',
+                'file-throughput-write'],
+            help="The specific type of througput to get")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print analytics.current_activity_get(conninfo, credentials, args.type)
 
 class GetCapacityHistoryCommand(qumulo.lib.opts.Subcommand):
     NAME = "capacity_history_get"
