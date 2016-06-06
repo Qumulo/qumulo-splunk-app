@@ -1,0 +1,22 @@
+<nav>
+  
+<view name="qumulo_overview" default="true"/>
+  
+<collection label="Search">
+<a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3Dqumulo">Search All</a>
+<a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3Dqumulo%20sourcetype%3Dqumulo_iops">Search IOPS</a>
+<a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3Dqumulo%20sourcetype%3Dqumulo_capacity">Search Capacity</a>
+<a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3Dqumulo%20sourcetype%3Dqumulo_throughput">Search Throughput</a>
+</collection>
+
+<collection label="Manage">
+  <a href="../../../en-US/manager/qumulo_splunk_app/apps/local/qumulo_splunk_app/setup?action=edit">Setup</a>
+
+  <a href="../../../en-US/manager/qumulo_splunk_app/data/inputs/qumulo">Qumulo REST Inputs</a>
+  <a href="../../../en-US/app/qumulo_splunk_app/search?q=search%20index%3D_internal%20error%20ExecProcessor%20qumulo.py">Modular Input Errors</a>
+ 
+</collection>
+
+<a href="http://www.qumulo.com">Qumulo Website</a>
+
+</nav>

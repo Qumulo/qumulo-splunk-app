@@ -18,7 +18,6 @@ from datetime import datetime
 import json
 import math
 import os
-import random
 import sys
 import logging
 import time
@@ -77,13 +76,37 @@ class QumuloScript(Script):
         username_argument = Argument("username")
         username_argument.title = "Username"
         username_argument.data_type = Argument.data_type_string
-        username_argument.description = "username for authentication , defaults to admin"
+        username_argument.description = "Username for authentication , defaults to admin"
         username_argument.required_on_create = True
-
+        username_argument.required_on_edit = False
         # If you are not using external validation, you would add something like:
         #
         # scheme.validation = "min > 0"
         scheme.add_argument(username_argument)
+
+        password_argument = Argument("password")
+        password_argument.title = "Password"
+        password_argument.data_type = Argument.data_type_string
+        password_argument.description = "Password for authentication , defaults to admin"
+        password_argument.required_on_create = True
+        password_argument.required_on_edit = False
+        scheme.add_argument(password_argument)
+
+        nodehost_argument = Argument("nodehost")
+        nodehost_argument.title = "Host"
+        nodehost_argument.data_type = Argument.data_type_string
+        nodehost_argument.description = "Cluster hostname or IP address"
+        nodehost_argument.required_on_create = True
+        nodehost_argument.required_on_edit = False
+        scheme.add_argument(nodehost_argument)
+
+        port_argument = Argument("port")
+        port_argument.title = "Port"
+        port_argument.data_type = Argument.data_type_number
+        port_argument.description = "Port number for Cluster API access, defaults to 8000"
+        port_argument.required_on_create = True
+        port_argument.required_on_edit = False
+        scheme.add_argument(port_argument)
 
         return scheme
 
@@ -117,19 +140,80 @@ class QumuloScript(Script):
         :param inputs: an InputDefinition object
         :param ew: an EventWriter object
         """
+
         # Go through each input for this modular input
         for input_name, input_item in inputs.inputs.iteritems():
-            # Get the values, cast them as floats
-            minimum = float(42)
-            maximum = float(58)
 
-            # Create an Event object, and set its data fields
-            event = Event()
-            event.stanza = input_name
-            event.data = "username is " + input_item["username"]
+            if input_item['username'] is not None:
+                # Create a Qumulo client
+                client = QumuloClient(input_item)
 
-            # Tell the EventWriter to write this event
-            ew.write_event(event)
+                if input_item["endpoint_to_poll"] == "throughput":
+                    result = self.process_throughput(ew, input_name, client)
+                elif input_item["endpoint_to_poll"] == "capacity":
+                    result = self.process_capacity(ew, input_name, client)
+                elif input_item["endpoint_to_poll"] == "iops":
+                    result = self.process_iops(ew, input_name, client)
+
+    def process_iops(self, ew, input_name, client):
+
+        try:
+            iops = client.get_iops()
+
+            for op in iops:
+                # print_xml_stream(json.dumps(op))
+                # Create an Event object, and set its data fields
+                event = Event()
+                event.stanza = input_name
+                event.data = json.dumps(op)
+                ew.write_event(event)
+
+        except RequestError, excpt:
+            logging.error("Exception performing request for IOPS: %s" % str(excpt))
+            return
+
+    def process_capacity(self, ew, input_name, client):
+        try:
+            capacity = client.get_capacity()
+        except RequestError, excpt:
+            logging.error("Exception performing request for Capacity: %s" % str(excpt))
+            return
+
+        cap = {}
+        cap["free_gigabytes"] = int(long(float(capacity['free_size_bytes']))/math.pow(1024,3))
+        cap["raw_gigabytes"] = int(long(float(capacity['raw_size_bytes']))/math.pow(1024,3))
+        cap["total_gigabytes"] = int(long(float(capacity['total_size_bytes']))/math.pow(1024,3))
+        # print_xml_stream(json.dumps(cap))
+        event = Event()
+        event.stanza = input_name
+        event.data = json.dumps(cap)
+        ew.write_event(event)
+
+    def process_throughput(self, ew, input_name, client):
+        try:
+            throughput = client.get_throughput()
+        except RequestError, excpt:
+            logging.error("Exception performing request for Throughput: %s" % str(excpt))
+            return
+
+        for entry in throughput:
+            for i in range(len(entry['values'])):
+                log_entry = {}
+                if "throughput" in entry['id']:
+                    log_entry['metric'] = entry['id']
+                    log_entry['time'] = entry['times'][i]
+                    log_entry['value'] = entry['values'][i]
+                    # print_xml_stream(json.dumps(log_entry))
+                    event = Event()
+                    event.stanza = input_name
+                    event.data = json.dumps(log_entry)
+                    ew.write_event(event)
+
+
+
+
+
+
 
 if __name__ == "__main__":
     sys.exit(QumuloScript().run(sys.argv))
