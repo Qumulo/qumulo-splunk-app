@@ -192,6 +192,7 @@ class CreateSymlinkCommand(qumulo.lib.opts.Subcommand):
         parser.add_argument("--path", help="Path to parent directory")
         parser.add_argument("--id", help="ID of parent directory")
         parser.add_argument("--target", help="Link target", required=True)
+        parser.add_argument("--target-type", help="Link target type")
 
     @staticmethod
     def main(conninfo, credentials, args):
@@ -200,8 +201,14 @@ class CreateSymlinkCommand(qumulo.lib.opts.Subcommand):
         elif not args.id and not args.path:
             raise ValueError("Must specify --path or --id")
 
-        print fs.create_symlink(conninfo, credentials, args.name,
-            args.target, dir_path=args.path, dir_id=args.id)
+        print fs.create_symlink(
+            conninfo,
+            credentials,
+            args.name,
+            args.target,
+            dir_path=args.path,
+            dir_id=args.id,
+            target_type=args.target_type)
 
 class CreateLinkCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_create_link"

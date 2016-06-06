@@ -24,6 +24,6 @@ def disks_status_get(conninfo, credentials):
 def set_error_threshold(conninfo, credentials, threshold):
     body = {'threshold': threshold}
     method = "POST"
-    uri = str(UriBuilder(path="/v1/debug/disks/set_error_threshold"))
+    uri = str(UriBuilder(path="/v1/debug/disks/set-error-threshold"))
 
     return request.rest_request(conninfo, credentials, method, uri, body=body)

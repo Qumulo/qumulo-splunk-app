@@ -29,6 +29,15 @@ def iops_get(conninfo, credentials, specific_type=None):
     return request.rest_request(conninfo, credentials, method, str(uri))
 
 @request.request
+def current_activity_get(conninfo, credentials, specific_type=None):
+    method = "GET"
+    uri = UriBuilder(path="/v1/analytics/activity/current")
+    if specific_type:
+        uri.add_query_param('type', specific_type)
+
+    return request.rest_request(conninfo, credentials, method, str(uri))
+
+@request.request
 def capacity_history_get(conninfo, credentials, interval,
                          begin_time, end_time=None):
     method = 'GET'

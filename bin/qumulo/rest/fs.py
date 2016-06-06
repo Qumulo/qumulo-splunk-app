@@ -208,7 +208,7 @@ def create_directory(conninfo, credentials, name, dir_path=None, dir_id=None):
 
 @request.request
 def create_symlink(conninfo, credentials, name, target, dir_path=None,
-                   dir_id=None):
+                   dir_id=None, target_type=None):
     assert (dir_path is not None) ^ (dir_id is not None)
     ref = unicode(dir_path) if dir_path else unicode(dir_id)
     uri = build_files_uri([ref, "entries"]).append_slash()
@@ -218,6 +218,8 @@ def create_symlink(conninfo, credentials, name, target, dir_path=None,
         'old_path': unicode(target),
         'action': 'CREATE_SYMLINK'
     }
+    if target_type is not None:
+        config['symlink_target_type'] = target_type
 
     method = "POST"
     return request.rest_request(conninfo, credentials, method, unicode(uri),
@@ -316,7 +318,7 @@ def build_files_uri(components, append_slash=False):
     return uri
 
 # Return an iterator that reads an entire directory.  Each iteration returns a
-# page of files, which will be the specified page size or less.
+# rest response for a specific file.
 @request.request
 def read_entire_directory(conninfo, credentials, page_size=None, path=None,
                           id_=None):
@@ -324,13 +326,31 @@ def read_entire_directory(conninfo, credentials, page_size=None, path=None,
     result = read_directory(conninfo, credentials, page_size=page_size,
         path=path, id_=id_)
     next_uri = result.data['paging']['next']
-    yield result
+    for f in result.data.get('files', []):
+        yield request.RestResponse(f, result.etag)
 
     while next_uri != '':
         # Perform raw read_directory with paging URI.
         result = request.rest_request(conninfo, credentials, "GET", next_uri)
         next_uri = result.data['paging']['next']
-        yield result
+        for f in result.data.get('files', []):
+            yield request.RestResponse(f, result.etag)
+
+# Return an iterator that reads an entire directory.  Each iteration returns a
+# rest response for a specific file. Any fs_no_such_entry_error returned is
+# logged and ignored, ending the iteration.
+def read_entire_directory_and_ignore_not_found(
+    conninfo, credentials, page_size=None, path=None, id_=None):
+    try:
+        for f in read_entire_directory(
+                conninfo, credentials, page_size, path, id_):
+            yield f
+    except request.RequestError as e:
+        if e.status_code == 404 and e.error_class == 'fs_no_such_entry_error':
+            print "Entry {} disappeared while walking, ignoring error.".format(
+                    path)
+        else:
+            raise
 
 # Return an iterator that walks a file system tree depth-first and pre-order
 @request.request
@@ -338,15 +358,13 @@ def tree_walk_preorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for result in read_entire_directory(conninfo, credentials, path=path):
-            if 'files' in result.data:
-                for f in result.data['files']:
-                    yield request.RestResponse(f, result.etag)
+        for f in read_entire_directory_and_ignore_not_found(
+                conninfo, credentials, path=path):
+            yield f
 
-                    if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
-                        for ff in call_read_dir(conninfo, credentials,
-                                                f['path']):
-                            yield ff
+            if f.data['type'] == 'FS_FILE_TYPE_DIRECTORY':
+                for ff in call_read_dir(conninfo, credentials, f.data['path']):
+                    yield ff
 
     result = get_attr(conninfo, credentials, path)
     yield result
@@ -360,17 +378,17 @@ def tree_walk_postorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for result in read_entire_directory(conninfo, credentials, path=path):
-            if 'files' in result.data:
-                for f in result.data['files']:
-                    if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
-                        for ff in call_read_dir(conninfo, credentials,
-                                                f['path']):
-                            yield ff
-                    yield request.RestResponse(f, result.etag)
+        for f in read_entire_directory_and_ignore_not_found(
+                conninfo, credentials, path=path):
+            if f.data['type'] == 'FS_FILE_TYPE_DIRECTORY':
+                for ff in call_read_dir(conninfo, credentials, f.data['path']):
+                    yield ff
+
+            yield f
+
+    result = get_attr(conninfo, credentials, path)
 
     for f in call_read_dir(conninfo, credentials, path):
         yield f
 
-    result = get_attr(conninfo, credentials, path)
     yield result
