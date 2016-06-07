@@ -15,25 +15,3 @@ port = <value>
 
 * IP address / hostname of a node in the cluster. Use 'localhost' (default) when running directly on the node
 nodehost = <value>
-
-* in seconds or a cron syntax
-interval= <value>
-
-* Qumulo REST endpoint to poll (logical name that will map to a function to call from the Qumulo Python package)
-endpoint_to_poll= <value>
-
-*----------------------------------
-* Optional Custom override fields
-*----------------------------------
-
-* in format prop=value,prop2=value2
-request_headers= <value>
-
-* Request body payload for POST and PUT
-request_body= <value>
-
-* in format arg=value,arg2=value2
-request_url_args= <value>
-
-* Delimiter to use for any multi "key=value" field inputs , defaults to ","
-delimiter= <value>
