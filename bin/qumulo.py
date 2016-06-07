@@ -92,6 +92,14 @@ class QumuloScript(Script):
         password_argument.required_on_edit = False
         scheme.add_argument(password_argument)
 
+        port_argument = Argument("port")
+        port_argument.title = "Port"
+        port_argument.data_type = Argument.data_type_number
+        port_argument.description = "Port number for Cluster API access, defaults to 8000"
+        port_argument.required_on_create = True
+        port_argument.required_on_edit = False
+        scheme.add_argument(port_argument)
+
         nodehost_argument = Argument("nodehost")
         nodehost_argument.title = "Host"
         nodehost_argument.data_type = Argument.data_type_string
@@ -100,13 +108,6 @@ class QumuloScript(Script):
         nodehost_argument.required_on_edit = False
         scheme.add_argument(nodehost_argument)
 
-        port_argument = Argument("port")
-        port_argument.title = "Port"
-        port_argument.data_type = Argument.data_type_number
-        port_argument.description = "Port number for Cluster API access, defaults to 8000"
-        port_argument.required_on_create = True
-        port_argument.required_on_edit = False
-        scheme.add_argument(port_argument)
 
         return scheme
 
