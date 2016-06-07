@@ -17,7 +17,7 @@ port = <value>
 nodehost = <value>
 
 * in seconds or a cron syntax
-polling_interval= <value>
+interval= <value>
 
 * Qumulo REST endpoint to poll (logical name that will map to a function to call from the Qumulo Python package)
 endpoint_to_poll= <value>

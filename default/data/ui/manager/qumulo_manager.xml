@@ -29,7 +29,7 @@
 					</options>
 				</element>
 
-				<element name="polling_interval" type="textfield" label="Polling Interval">
+				<element name="interval" type="textfield" label="Polling Interval">
 
 					<view name="edit" />
 					<view name="create" />

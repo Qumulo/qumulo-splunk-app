@@ -71,7 +71,7 @@ class QumuloScript(Script):
         # Otherwise, Splunk lets you specify a validation string for each argument
         # and will run validation internally using that string.
         scheme.use_external_validation = True
-        scheme.use_single_instance = True
+        scheme.use_single_instance = False
 
         username_argument = Argument("username")
         username_argument.title = "Username"
