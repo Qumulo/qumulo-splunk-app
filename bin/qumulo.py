@@ -108,6 +108,14 @@ class QumuloScript(Script):
         nodehost_argument.required_on_edit = False
         scheme.add_argument(nodehost_argument)
 
+        endpoint_to_poll_argument = Argument("endpoint_to_poll")
+        endpoint_to_poll_argument.title = "Endpoint to poll"
+        endpoint_to_poll_argument.data_type = Argument.data_type_string
+        endpoint_to_poll_argument.description = "Name of endpoint to poll"
+        endpoint_to_poll_argument.required_on_create = True
+        endpoint_to_poll_argument.required_on_edit = False
+        scheme.add_argument(endpoint_to_poll_argument)        
+
 
         return scheme
 
