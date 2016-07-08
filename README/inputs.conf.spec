@@ -4,13 +4,13 @@
 * Standard fields
 *----------------------------------
 
-* 'username' for authentication , defaults to admin
+* 'username' for authentication
 username = <value>
 
-* 'password' for authentication , defaults to admin
+* 'password' for authentication
 password = <value>
 
-* port 'number' for the API server port , defaults to 8000
+* port 'number' for the API server port (default is 8000)
 port = <value>
 
 * IP address / hostname of a node in the cluster. Use 'localhost' (default) when running directly on the node

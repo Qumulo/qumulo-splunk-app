@@ -6,19 +6,19 @@
     <text>Configure your Qumulo REST API Settings here</text>
 
         <input field="username">
-            <label>'username' for authentication , defaults to admin</label>
+            <label>'username' for authentication</label>
             <type>text</type>
         </input>
         <input field="password">
-            <label>'password' for authentication , defaults to admin</label>
+            <label>'password' for authentication</label>
             <type>password</type>
         </input>
         <input field="port">
-            <label>port 'number' for the API server port , defaults to 8000</label>
+            <label>port 'number' for the API server port</label>
             <type>text</type>
         </input>
         <input field="nodehost">
-            <label>An IP address or hostname of a node in the cluster.Use 'localhost' (the default) when running directly on the node</label>
+            <label>An IP address or hostname of a node in the cluster.</label>
             <type>text</type>
         </input>
    </block>

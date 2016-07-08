@@ -76,7 +76,7 @@ class QumuloScript(Script):
         username_argument = Argument("username")
         username_argument.title = "Username"
         username_argument.data_type = Argument.data_type_string
-        username_argument.description = "Username for authentication , defaults to admin"
+        username_argument.description = "Username for authentication"
         username_argument.required_on_create = True
         username_argument.required_on_edit = False
         # If you are not using external validation, you would add something like:
@@ -87,7 +87,7 @@ class QumuloScript(Script):
         password_argument = Argument("password")
         password_argument.title = "Password"
         password_argument.data_type = Argument.data_type_string
-        password_argument.description = "Password for authentication , defaults to admin"
+        password_argument.description = "Password for authentication"
         password_argument.required_on_create = True
         password_argument.required_on_edit = False
         scheme.add_argument(password_argument)
