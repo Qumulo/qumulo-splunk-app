@@ -153,6 +153,8 @@ class QumuloScript(Script):
         # Go through each input for this modular input
         for input_name, input_item in inputs.inputs.iteritems():
 
+            logging.error("In stream_events, input_item is : %s" % json.dumps(input_item))
+
             if input_item['username'] is not None:
                 # Create a Qumulo client
                 client = QumuloClient(input_item)
@@ -242,9 +244,8 @@ def getCredentials(sessionKey):
 
 if __name__ == "__main__":
 
-
-     # read session key sent from splunkd
+    # read session key sent from splunkd
     sessionKey = sys.stdin.readline().strip()
-    username, password = getCredentials(sessionKey)
+    # username, password = getCredentials(sessionKey)
 
     sys.exit(QumuloScript().run(sys.argv))

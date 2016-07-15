@@ -1,7 +1,7 @@
 <setup>
 
 
-  <block title="Qumulo Setup" endpoint="qumulo/qumulosetup" entity="qumulo">
+  <block title="Qumulo Setup" endpoint="storage/passwords" entity="_new">
 
     <text>Configure your Qumulo REST API Settings here</text>
 
