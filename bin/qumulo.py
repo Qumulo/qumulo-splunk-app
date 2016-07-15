@@ -27,20 +27,18 @@ import xml.dom.minidom
 from qumulo_client import QumuloClient
 from qumulo.lib.request import RequestError
 
+from splunklib.modularinput import *
+
+import splunklib.client
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
-EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
+EGG_DIR = os.path.join(SPLUNK_HOME, "etc", "apps", "qumulo_splunk_app", "bin")
 
 # Import any Eggs
 for filename in os.listdir(EGG_DIR):
     if filename.endswith(".egg"):
         sys.path.append(EGG_DIR + filename)
-
-from croniter import croniter
-
-
-from splunklib.modularinput import *
 
 class QumuloScript(Script):
     """All modular inputs should inherit from the abstract base class Script
@@ -222,7 +220,29 @@ class QumuloScript(Script):
 
 
 
+def getCredentials(sessionKey):
+   myapp = 'qumulo_splunk_app'
+   try:
+      # list all credentials
+      entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+                                    owner='nobody', sessionKey=sessionKey) 
+   except Exception, e:
+      raise Exception("Could not get %s credentials from splunk. Error: %s" 
+                      % (myapp, str(e)))
+
+   # return first set of credentials
+   for i, c in entities.items(): 
+        logging.error("entities.items: %s" % str(json.dumps(c)))
+        return c['username'], c['password']
+
+   raise Exception("No credentials have been found")
 
 
 if __name__ == "__main__":
+
+
+     # read session key sent from splunkd
+    sessionKey = sys.stdin.readline().strip()
+    username, password = getCredentials(sessionKey)
+
     sys.exit(QumuloScript().run(sys.argv))

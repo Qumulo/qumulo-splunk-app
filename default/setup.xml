@@ -6,11 +6,15 @@
     <text>Configure your Qumulo REST API Settings here</text>
 
         <input field="username">
-            <label>'username' for authentication</label>
+            <label>Username for Qumulo cluster authentication</label>
             <type>text</type>
         </input>
         <input field="password">
-            <label>'password' for authentication</label>
+            <label>Password for Qumulo cluster authentication</label>
+            <view name="edit"/>
+            <view name="create"/>
+            <key name="exampleText">Password of the account to authenticate with (i.e. 'Abc123!').  Obfuscated using the built-in Splunk auth facilities. No Defaults.
+            </key>            
             <type>password</type>
         </input>
         <input field="port">
