@@ -30,6 +30,8 @@ from qumulo.lib.request import RequestError
 from splunklib.modularinput import *
 
 import splunklib.client
+import splunk.entity as entity
+
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
