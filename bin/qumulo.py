@@ -29,10 +29,6 @@ from qumulo.lib.request import RequestError
 
 from splunklib.modularinput import *
 
-import splunklib.client
-import splunk.entity as entity
-
-
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
 EGG_DIR = os.path.join(SPLUNK_HOME, "etc", "apps", "qumulo_splunk_app", "bin")
@@ -142,19 +138,19 @@ class QumuloScript(Script):
         """
         myapp = 'qumulo_splunk_app'
 
-        try:
-          # list all credentials
-          entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
-                                        owner='nobody', sessionKey=sessionKey) 
-        except Exception, e:
-            raise Exception("Could not get %s credentials from splunk. Error: %s" 
-                          % (myapp, str(e)))
+        # try:
+        #   # list all credentials
+        #   entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+        #                                 owner='nobody', sessionKey=sessionKey) 
+        # except Exception, e:
+        #     raise Exception("Could not get %s credentials from splunk. Error: %s" 
+        #                   % (myapp, str(e)))
 
-        # return first set of credentials
-        for i, c in entities.items(): 
-            logging.error("entities.items: %s" % str(json.dumps(c)))
-            return c
-            # return c['username'], c['password']
+        # # return first set of credentials
+        # for i, c in entities.items(): 
+        #     logging.error("entities.items: %s" % str(json.dumps(c)))
+        #     return c
+        #     # return c['username'], c['password']
 
         raise Exception("No credentials have been found")
  
@@ -174,23 +170,23 @@ class QumuloScript(Script):
         # Get the session key from inputs and then get the creds based on session key
         if "session_key" in inputs.metadata:
             self.session_key =  inputs.metadata["session_key"]
-            self.session_info = self.get_credentials(self.session_key)
-            logging.error("in stream_events, self.session_info is %s" % json.dumps(self.session_info))
+            # self.session_info = self.get_credentials(self.session_key)
+            logging.error("in stream_events, self.session_key is %s" % json.dumps(self.session_key))
 
         myapp = 'qumulo_splunk_app'
-        try:
-           # list all credentials
-           entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
-                                         owner='nobody', sessionKey=sessionKey) 
-        except Exception, e:
-            raise Exception("Could not get %s credentials from splunk. Error: %s" 
-                                  % (myapp, str(e)))
+        # try:
+        #    # list all credentials
+        #    entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+        #                                  owner='nobody', sessionKey=sessionKey) 
+        # except Exception, e:
+        #     raise Exception("Could not get %s credentials from splunk. Error: %s" 
+        #                           % (myapp, str(e)))
 
-        # get first set of credentials
-        for i, c in entities.items(): 
-            logging.error("entities.items: %s" % str(json.dumps(c)))
-            username = c['username']
-            password = c['password']
+        # # get first set of credentials
+        # for i, c in entities.items(): 
+        #     logging.error("entities.items: %s" % str(json.dumps(c)))
+        #     username = c['username']
+        #     password = c['password']
             
 
         # Go through each input for this modular input
