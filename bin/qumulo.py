@@ -136,6 +136,27 @@ class QumuloScript(Script):
         # Get the parameters from the ValidationDefinition object,
         # then typecast the values as floats
         pass
+
+    def get_credentials(self, sessionKey):
+        """Given a session key, get the creds for the user
+        """
+        myapp = 'qumulo_splunk_app'
+
+        try:
+          # list all credentials
+          entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+                                        owner='nobody', sessionKey=sessionKey) 
+        except Exception, e:
+            raise Exception("Could not get %s credentials from splunk. Error: %s" 
+                          % (myapp, str(e)))
+
+        # return first set of credentials
+        for i, c in entities.items(): 
+            logging.error("entities.items: %s" % str(json.dumps(c)))
+            return c
+            # return c['username'], c['password']
+
+        raise Exception("No credentials have been found")
  
     def stream_events(self, inputs, ew):
         """This function handles all the action: splunk calls this modular input
@@ -149,6 +170,28 @@ class QumuloScript(Script):
         :param inputs: an InputDefinition object
         :param ew: an EventWriter object
         """
+
+        # Get the session key from inputs and then get the creds based on session key
+        if "session_key" in inputs.metadata:
+            self.session_key =  inputs.metadata["session_key"]
+            self.session_info = self.get_credentials(self.session_key)
+            logging.error("in stream_events, self.session_info is %s" % json.dumps(self.session_info))
+
+        myapp = 'qumulo_splunk_app'
+        try:
+           # list all credentials
+           entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+                                         owner='nobody', sessionKey=sessionKey) 
+        except Exception, e:
+            raise Exception("Could not get %s credentials from splunk. Error: %s" 
+                                  % (myapp, str(e)))
+
+        # get first set of credentials
+        for i, c in entities.items(): 
+            logging.error("entities.items: %s" % str(json.dumps(c)))
+            username = c['username']
+            password = c['password']
+            
 
         # Go through each input for this modular input
         for input_name, input_item in inputs.inputs.iteritems():
@@ -223,23 +266,6 @@ class QumuloScript(Script):
 
 
 
-
-def getCredentials(sessionKey):
-   myapp = 'qumulo_splunk_app'
-   try:
-      # list all credentials
-      entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
-                                    owner='nobody', sessionKey=sessionKey) 
-   except Exception, e:
-      raise Exception("Could not get %s credentials from splunk. Error: %s" 
-                      % (myapp, str(e)))
-
-   # return first set of credentials
-   for i, c in entities.items(): 
-        logging.error("entities.items: %s" % str(json.dumps(c)))
-        return c['username'], c['password']
-
-   raise Exception("No credentials have been found")
 
 
 if __name__ == "__main__":
