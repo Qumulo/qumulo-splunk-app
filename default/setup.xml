@@ -1,18 +1,8 @@
 <setup>
 
-
   <block title="Qumulo Setup" endpoint="qumulo/qumulosetup" entity="qumulo">
 
     <text>Configure your Qumulo REST API Settings here</text>
-
-        <input field="username">
-            <label>'username' for authentication</label>
-            <type>text</type>
-        </input>
-        <input field="password">
-            <label>'password' for authentication</label>
-            <type>password</type>
-        </input>
         <input field="port">
             <label>port 'number' for the API server port</label>
             <type>text</type>
@@ -23,5 +13,17 @@
         </input>
    </block>
 
+
+   <block title="Add new credentials" endpoint="storage/passwords" entity="_new">
+     <input field="name">
+       <label>Username</label>
+       <type>text</type>
+     </input>
+
+     <input field="password">
+       <label>Password</label>
+       <type>password</type>
+     </input>
+   </block>
 
 </setup>

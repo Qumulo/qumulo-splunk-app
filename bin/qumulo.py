@@ -27,20 +27,17 @@ import xml.dom.minidom
 from qumulo_client import QumuloClient
 from qumulo.lib.request import RequestError
 
+from splunklib.modularinput import *
+import splunklib.client 
 
 SPLUNK_HOME = os.environ.get("SPLUNK_HOME")
 STANZA = None
-EGG_DIR = SPLUNK_HOME + "/etc/apps/qumulo_splunk_app/bin/"
+EGG_DIR = os.path.join(SPLUNK_HOME, "etc", "apps", "qumulo_splunk_app", "bin")
 
 # Import any Eggs
 for filename in os.listdir(EGG_DIR):
     if filename.endswith(".egg"):
         sys.path.append(EGG_DIR + filename)
-
-from croniter import croniter
-
-
-from splunklib.modularinput import *
 
 class QumuloScript(Script):
     """All modular inputs should inherit from the abstract base class Script
@@ -136,6 +133,27 @@ class QumuloScript(Script):
         # Get the parameters from the ValidationDefinition object,
         # then typecast the values as floats
         pass
+
+    def get_credentials(self, sessionKey):
+        """Given a session key, get the creds for the user
+        """
+        myapp = 'qumulo_splunk_app'
+
+        # try:
+        #   # list all credentials
+        #   entities = entity.getEntities(['admin', 'passwords'], namespace=myapp, 
+        #                                 owner='nobody', sessionKey=sessionKey) 
+        # except Exception, e:
+        #     raise Exception("Could not get %s credentials from splunk. Error: %s" 
+        #                   % (myapp, str(e)))
+
+        # # return first set of credentials
+        # for i, c in entities.items(): 
+        #     logging.error("entities.items: %s" % str(json.dumps(c)))
+        #     return c
+        #     # return c['username'], c['password']
+
+        raise Exception("No credentials have been found")
  
     def stream_events(self, inputs, ew):
         """This function handles all the action: splunk calls this modular input
@@ -149,20 +167,44 @@ class QumuloScript(Script):
         :param inputs: an InputDefinition object
         :param ew: an EventWriter object
         """
+        app_config = dict()
+        try:
+            service = splunklib.client.connect(token=inputs.metadata["session_key"],
+                                    app='qumulo_splunk_app', owner="nobody")
 
-        # Go through each input for this modular input
+            for password in service.storage_passwords:
+                app_config["username"] = password.username
+                app_config["password"] = password.clear_password
+        except Exception, excpt:
+            logging.error("Unable to get storage_passwords: {}".format(excpt))
+            return
+
+        # BUGBUG: password.name from service.storage_passwords may have colon delimiters returned in 
+        # the field value.  Sanitize if so.
+        # TODO: Figure out why these are here and determine the prescribed way to obviate the problem.
+
+
+
         for input_name, input_item in inputs.inputs.iteritems():
 
-            if input_item['username'] is not None:
-                # Create a Qumulo client
-                client = QumuloClient(input_item)
+            # logging.error("In stream_events, input_item is : %s" % json.dumps(input_item))
+            if "nodehost" in input_item:
+                app_config["nodehost"] = input_item["nodehost"]
+            if "port" in input_item:
+                app_config["port"] = input_item["port"]
 
-                if input_item["endpoint_to_poll"] == "throughput":
-                    result = self.process_throughput(ew, input_name, client)
-                elif input_item["endpoint_to_poll"] == "capacity":
-                    result = self.process_capacity(ew, input_name, client)
-                elif input_item["endpoint_to_poll"] == "iops":
-                    result = self.process_iops(ew, input_name, client)
+            if "endpoint_to_poll" in input_item:
+                endpoint_to_poll = input_item["endpoint_to_poll"]
+
+
+            client = QumuloClient(app_config)
+
+            if endpoint_to_poll == "throughput":
+                result = self.process_throughput(ew, input_name, client)
+            elif endpoint_to_poll == "capacity":
+                result = self.process_capacity(ew, input_name, client)
+            elif endpoint_to_poll == "iops":
+                result = self.process_iops(ew, input_name, client)
 
     def process_iops(self, ew, input_name, client):
 
@@ -223,6 +265,10 @@ class QumuloScript(Script):
 
 
 
-
 if __name__ == "__main__":
+
+    # read session key sent from splunkd
+    sessionKey = sys.stdin.readline().strip()
+    # username, password = getCredentials(sessionKey)
+
     sys.exit(QumuloScript().run(sys.argv))

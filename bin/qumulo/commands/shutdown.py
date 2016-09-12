@@ -13,20 +13,13 @@
 import qumulo.lib.opts
 import qumulo.rest.shutdown as shutdown
 
-def ask(command, target):
-    f = raw_input("Are you sure you want to %s the %s (yes/no): " %
-                  (command, target))
-    if f.lower() == 'no':
-        print 'Cancelling the %s request' % command
-        return False
-    elif f.lower() != 'yes':
-        raise ValueError("Please enter 'yes' or 'no'")
-
-    return True
+def ask_for_shutdown(command, target):
+    message = 'Are you sure you want to %s the %s' % (command, target)
+    return qumulo.lib.opts.ask(command, message)
 
 class RestartCommand(qumulo.lib.opts.Subcommand):
     NAME = "restart"
-    DESCRIPTION = "Restart the server"
+    DESCRIPTION = "Restart the entire machine"
 
     @staticmethod
     def options(parser):
@@ -35,9 +28,9 @@ class RestartCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        if args.force or ask("restart", "server"):
+        if args.force or ask_for_shutdown("restart", "machine"):
             shutdown.restart(conninfo, credentials)
-            print "The server is restarting."
+            print "The machine is restarting."
 
 class HaltCommand(qumulo.lib.opts.Subcommand):
     NAME = "halt"
@@ -50,7 +43,7 @@ class HaltCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        if args.force or ask("halt", "server"):
+        if args.force or ask_for_shutdown("halt", "server"):
             shutdown.halt(conninfo, credentials)
             print "The server is halting."
 
@@ -65,7 +58,7 @@ class RestartClusterCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        if args.force or ask("restart", "cluster"):
+        if args.force or ask_for_shutdown("restart", "cluster"):
             shutdown.restart_cluster(conninfo, credentials)
             print "The cluster is restarting."
 
@@ -80,6 +73,6 @@ class HaltClusterCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def main(conninfo, credentials, args):
-        if args.force or ask("halt", "cluster"):
+        if args.force or ask_for_shutdown("halt", "cluster"):
             shutdown.halt_cluster(conninfo, credentials)
             print "The cluster is halting."

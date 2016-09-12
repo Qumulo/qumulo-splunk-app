@@ -81,9 +81,13 @@ def set_attr(conninfo, credentials, mode, owner, group, size,
         body=config, if_match=if_match)
 
 @request.request
-def get_file_attr(conninfo, credentials, id_):
+def get_file_attr(conninfo, credentials, id_, snapshot=None):
     method = "GET"
     uri = build_files_uri([id_, "info", "attributes"])
+
+    if snapshot:
+        uri.add_query_param('snapshot', snapshot)
+
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
@@ -129,12 +133,15 @@ def write_file(conninfo, credentials, data_file, path=None, id_=None,
         request_content_type=request.CONTENT_TYPE_BINARY)
 
 @request.request
-def get_acl(conninfo, credentials, path=None, id_=None):
+def get_acl(conninfo, credentials, path=None, id_=None, snapshot=None):
     assert (path is not None) ^ (id_ is not None)
     ref = unicode(path) if path else unicode(id_)
     uri = build_files_uri([ref, "info", "acl"])
 
     method = "GET"
+
+    if snapshot:
+        uri.add_query_param("snapshot", snapshot)
 
     return format_output_acl(conninfo, credentials, request.rest_request(
         conninfo, credentials, method, unicode(uri)))
@@ -167,10 +174,13 @@ def read_directory(conninfo, credentials, page_size, path=None, id_=None):
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
-def read_file(conninfo, credentials, file_, path=None, id_=None):
+def read_file(conninfo, credentials, file_, path=None, id_=None, snapshot=None):
     assert (path is not None) ^ (id_ is not None)
     ref = unicode(path) if path else unicode(id_)
     uri = build_files_uri([ref, "data"])
+
+    if snapshot:
+        uri.add_query_param('snapshot', snapshot)
 
     method = "GET"
     return request.rest_request(conninfo, credentials, method, unicode(uri),
@@ -298,6 +308,143 @@ def resolve_paths(conninfo, credentials, ids):
     uri = "/v1/files/resolve"
     return request.rest_request(conninfo, credentials, method, uri, body=ids)
 
+#  _               _
+# | |    ___   ___| | _____
+# | |   / _ \ / __| |/ / __|
+# | |__| (_) | (__|   <\__ \
+# |_____\___/ \___|_|\_\___/
+# FIGLET: Locks
+
+VALID_LOCK_PROTO_TYPE_COMBINATIONS = [
+    ('smb', 'byte-range'),
+    ('smb', 'share-mode'),
+    ('nlm', 'byte-range'),
+]
+
+@request.request
+def list_locks_by_file(
+        conninfo,
+        credentials,
+        protocol,
+        lock_type,
+        file_path=None,
+        file_id=None,
+        limit=None,
+        after=None):
+    assert (protocol, lock_type) in VALID_LOCK_PROTO_TYPE_COMBINATIONS
+    assert (file_path is not None) ^ (file_id is not None)
+    ref = unicode(file_path) if file_path else unicode(file_id)
+    uri = build_files_uri(
+        [ref, 'locks', protocol, lock_type], append_slash = True)
+    if limit:
+        uri.add_query_param("limit", limit)
+    if after:
+        uri.add_query_param("after", after)
+    return request.rest_request(conninfo, credentials, "GET", unicode(uri))
+
+@request.request
+def list_locks_by_client(
+        conninfo,
+        credentials,
+        protocol,
+        lock_type,
+        owner_name=None,
+        owner_address=None,
+        limit=None,
+        after=None):
+    assert (protocol, lock_type) in VALID_LOCK_PROTO_TYPE_COMBINATIONS
+    uri = build_files_uri(['locks', protocol, lock_type], append_slash = True)
+    if limit:
+        uri.add_query_param("limit", limit)
+    if after:
+        uri.add_query_param("after", after)
+    if owner_name:
+        uri.add_query_param("owner_name", owner_name)
+    if owner_address:
+        uri.add_query_param("owner_address", owner_address)
+    return request.rest_request(conninfo, credentials, "GET", unicode(uri))
+
+def _get_remaining_pages(conninfo, credentials, result, limit):
+    '''
+    Given the first page of a lock grant listing, retrieves all subsequent
+    pages, and returns the complete grant list.
+    '''
+    full_list = result.data['grants']
+    while len(result.data['grants']) == limit:
+        # If we got a full page, there are probably more pages.  Waiting for
+        # an empty page would also be reasonable, but carries the risk of
+        # never terminating if clients are frequently taking new locks.
+        result = request.rest_request(
+            conninfo, credentials, "GET", result.data['paging']['next'])
+        full_list += result.data['grants']
+    return full_list
+
+@request.request
+def list_all_locks_by_file(
+        conninfo,
+        credentials,
+        protocol,
+        lock_type,
+        file_path=None,
+        file_id=None,
+        limit=1000):
+    '''
+    Re-assembles the paginated list of lock grants for the given file.
+    '''
+    result = list_locks_by_file(
+        conninfo, credentials, protocol, lock_type, file_path, file_id, limit)
+    return _get_remaining_pages(conninfo, credentials, result, limit)
+
+@request.request
+def list_all_locks_by_client(
+        conninfo,
+        credentials,
+        protocol,
+        lock_type,
+        owner_name=None,
+        owner_address=None,
+        limit=1000):
+    '''
+    Re-assembles the paginated list of lock grants for the given client.
+    '''
+    result = list_locks_by_client(conninfo, credentials, protocol, lock_type,
+        owner_name, owner_address, limit)
+    return _get_remaining_pages(conninfo, credentials, result, limit)
+
+@request.request
+def release_nlm_locks_by_client(
+        conninfo,
+        credentials,
+        owner_name=None,
+        owner_address=None):
+    assert owner_name or owner_address
+    protocol, lock_type = 'nlm', 'byte-range'
+    uri = build_files_uri(['locks', protocol, lock_type], append_slash = True)
+    if owner_name:
+        uri.add_query_param("owner_name", owner_name)
+    if owner_address:
+        uri.add_query_param("owner_address", owner_address)
+    return request.rest_request(conninfo, credentials, "DELETE", unicode(uri))
+
+@request.request
+def release_nlm_lock(
+        conninfo,
+        credentials,
+        offset,
+        size,
+        owner_id,
+        file_path=None,
+        file_id=None):
+    assert (file_path is not None) ^ (file_id is not None)
+    protocol, lock_type = 'nlm', 'byte-range'
+    ref = unicode(file_path) if file_path else unicode(file_id)
+    uri = build_files_uri(
+            [ref, 'locks', protocol, lock_type], append_slash = True)
+    uri.add_query_param("offset", offset)
+    uri.add_query_param("size", size)
+    uri.add_query_param("owner_id", owner_id)
+    return request.rest_request(conninfo, credentials, "DELETE", unicode(uri))
+
 #  _   _      _
 # | | | | ___| |_ __   ___ _ __ ___
 # | |_| |/ _ \ | '_ \ / _ \ '__/ __|
@@ -317,8 +464,8 @@ def build_files_uri(components, append_slash=False):
 
     return uri
 
-# Return an iterator that reads an entire directory.  Each iteration returns a
-# rest response for a specific file.
+# Return an iterator that reads an entire directory. Each iteration returns a
+# page of files, which will be the specified page size or less.
 @request.request
 def read_entire_directory(conninfo, credentials, page_size=None, path=None,
                           id_=None):
@@ -326,30 +473,25 @@ def read_entire_directory(conninfo, credentials, page_size=None, path=None,
     result = read_directory(conninfo, credentials, page_size=page_size,
         path=path, id_=id_)
     next_uri = result.data['paging']['next']
-    for f in result.data.get('files', []):
-        yield request.RestResponse(f, result.etag)
+    yield result
 
     while next_uri != '':
         # Perform raw read_directory with paging URI.
         result = request.rest_request(conninfo, credentials, "GET", next_uri)
         next_uri = result.data['paging']['next']
-        for f in result.data.get('files', []):
-            yield request.RestResponse(f, result.etag)
+        yield result
 
-# Return an iterator that reads an entire directory.  Each iteration returns a
-# rest response for a specific file. Any fs_no_such_entry_error returned is
-# logged and ignored, ending the iteration.
+# Return an iterator that reads an entire directory. Each iteration returns a
+# page of files. Any fs_no_such_entry_error returned is logged and ignored,
+# ending the iteration.
 def read_entire_directory_and_ignore_not_found(
     conninfo, credentials, page_size=None, path=None, id_=None):
     try:
-        for f in read_entire_directory(
+        for result in read_entire_directory(
                 conninfo, credentials, page_size, path, id_):
-            yield f
+            yield result
     except request.RequestError as e:
-        if e.status_code == 404 and e.error_class == 'fs_no_such_entry_error':
-            print "Entry {} disappeared while walking, ignoring error.".format(
-                    path)
-        else:
+        if e.status_code != 404 or e.error_class != 'fs_no_such_entry_error':
             raise
 
 # Return an iterator that walks a file system tree depth-first and pre-order
@@ -358,13 +500,16 @@ def tree_walk_preorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for f in read_entire_directory_and_ignore_not_found(
+        for result in read_entire_directory_and_ignore_not_found(
                 conninfo, credentials, path=path):
-            yield f
+            if 'files' in result.data:
+                for f in result.data['files']:
+                    yield request.RestResponse(f, result.etag)
 
-            if f.data['type'] == 'FS_FILE_TYPE_DIRECTORY':
-                for ff in call_read_dir(conninfo, credentials, f.data['path']):
-                    yield ff
+                    if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
+                        for ff in call_read_dir(conninfo, credentials,
+                                                f['path']):
+                            yield ff
 
     result = get_attr(conninfo, credentials, path)
     yield result
@@ -378,13 +523,15 @@ def tree_walk_postorder(conninfo, credentials, path):
     path = unicode(path)
 
     def call_read_dir(conninfo, credentials, path):
-        for f in read_entire_directory_and_ignore_not_found(
+        for result in read_entire_directory_and_ignore_not_found(
                 conninfo, credentials, path=path):
-            if f.data['type'] == 'FS_FILE_TYPE_DIRECTORY':
-                for ff in call_read_dir(conninfo, credentials, f.data['path']):
-                    yield ff
-
-            yield f
+            if 'files' in result.data:
+                for f in result.data['files']:
+                    if f['type'] == 'FS_FILE_TYPE_DIRECTORY':
+                        for ff in call_read_dir(conninfo, credentials,
+                                                f['path']):
+                            yield ff
+                    yield request.RestResponse(f, result.etag)
 
     result = get_attr(conninfo, credentials, path)
 

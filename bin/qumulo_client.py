@@ -35,7 +35,7 @@ class QumuloClient(object):
         self.password = config.get("password")
         self.host = config.get("nodehost")
         self.port = int(config.get("port", 8000))
-        self.polling_interval = int(config.get("polling_interval",60))
+        self.polling_interval = int(config.get("polling_interval",300))
         self.connection = None
         self.credentials = None
         self.config = config
@@ -51,7 +51,7 @@ class QumuloClient(object):
             self.credentials = qumulo.lib.auth.Credentials.\
                     from_login_response(login_results)
         except Exception, excpt:
-            logging.error("Error logging in to the REST server %{0}: %{1}".format(self.host, excpt))
+            logging.error("Error logging in to the REST server %{0}: %{1} with creds {2} / {3}".format(self.host, excpt, self.username, self.password))
             # sys.exit(2)
 
     def path_to_paths(self, local_path):
