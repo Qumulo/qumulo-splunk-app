@@ -20,7 +20,8 @@ FIELDS = set((
     'gateway',
     'dns_servers',
     'dns_search_domains',
-    'mtu'
+    'mtu',
+    'bonding_mode'
 ))
 
 @request.request

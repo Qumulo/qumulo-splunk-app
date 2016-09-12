@@ -41,6 +41,9 @@ class ModifyClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
             help="(if STATIC) DNS search domain")
         parser.add_argument("--mtu", type=int,
              help="(if STATIC) The maximum transfer unit (MTU) in bytes")
+        parser.add_argument("--bonding-mode",
+             choices=[ 'ACTIVE_BACKUP', 'IEEE_8023AD' ],
+             help="Ethernet bonding mode")
 
     @staticmethod
     def main(conninfo, credentials, args):

@@ -70,6 +70,16 @@ def read_password(user=None, prompt=None):
         return getpass.getpass(prompt)
     return getpass.getpass("Enter password for %s: " % user)
 
+def ask(command, message):
+    f = raw_input("%s (yes/no): " % (message))
+    if f.lower() == 'no':
+        print 'Cancelling the %s request' % command
+        return False
+    elif f.lower() != 'yes':
+        raise ValueError("Please enter 'yes' or 'no'")
+
+    return True
+
 # Override argument parser so that we can control the output of argparse. In
 # many cases, the default output is not good enough, so we augment that by
 # printing out the help.

@@ -1,22 +1,8 @@
 <setup>
 
-
-  <block title="Qumulo Setup" endpoint="storage/passwords" entity="_new">
+  <block title="Qumulo Setup" endpoint="qumulo/qumulosetup" entity="qumulo">
 
     <text>Configure your Qumulo REST API Settings here</text>
-
-        <input field="username">
-            <label>Username for Qumulo cluster authentication</label>
-            <type>text</type>
-        </input>
-        <input field="password">
-            <label>Password for Qumulo cluster authentication</label>
-            <view name="edit"/>
-            <view name="create"/>
-            <key name="exampleText">Password of the account to authenticate with (i.e. 'Abc123!').  Obfuscated using the built-in Splunk auth facilities. No Defaults.
-            </key>            
-            <type>password</type>
-        </input>
         <input field="port">
             <label>port 'number' for the API server port</label>
             <type>text</type>
@@ -27,5 +13,17 @@
         </input>
    </block>
 
+
+   <block title="Add new credentials" endpoint="storage/passwords" entity="_new">
+     <input field="name">
+       <label>Username</label>
+       <type>text</type>
+     </input>
+
+     <input field="password">
+       <label>Password</label>
+       <type>password</type>
+     </input>
+   </block>
 
 </setup>

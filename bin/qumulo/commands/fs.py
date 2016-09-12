@@ -23,11 +23,16 @@ import json
 
 AGG_ORDERING_CHOICES = [
     "total_blocks",
+    "total_datablocks",
+    "total_metablocks",
     "total_files",
     "total_directories",
-    "total_input_ops",
-    "moving_blocks",
-    "moving_input_ops"]
+    "total_symlinks",
+    "total_other",
+    "max_ctime"]
+
+LOCK_RELEASE_FORCE_MSG = "Manually releasing locks may cause data corruption, "\
+                         "do you want to proceed?"
 
 def all_elements_none(iterable):
     for element in iterable:
@@ -49,11 +54,14 @@ class GetFileAttrCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def options(parser):
-        parser.add_argument("--id", help="File id", type=str, required=True)
+        parser.add_argument("--id", help="File ID", type=str, required=True)
+        parser.add_argument("--snapshot", help="Snapshot ID to read from",
+            type=int)
 
     @staticmethod
     def main(conninfo, credentials, args):
-        print fs.get_file_attr(conninfo, credentials, args.id)
+        print fs.get_file_attr(conninfo, credentials, args.id,
+            snapshot=args.snapshot)
 
 class SetFileAttrCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_file_set_attr"
@@ -93,7 +101,9 @@ class GetAclCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def options(parser):
         parser.add_argument("--path", help="Path to file", type=str)
-        parser.add_argument("--id", help="File id", type=str)
+        parser.add_argument("--id", help="File ID", type=str)
+        parser.add_argument("--snapshot", help="Snapshot ID to read from",
+            type=int)
 
     @staticmethod
     def main(conninfo, credentials, args):
@@ -102,7 +112,8 @@ class GetAclCommand(qumulo.lib.opts.Subcommand):
         elif not args.id and not args.path:
             raise ValueError("Must specify --path or --id")
 
-        print fs.get_acl(conninfo, credentials, args.path, args.id)
+        print fs.get_acl(conninfo, credentials, args.path, args.id,
+            snapshot=args.snapshot)
 
 class SetAclCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_set_acl"
@@ -318,6 +329,8 @@ class ReadFileCommand(qumulo.lib.opts.Subcommand):
     def options(parser):
         parser.add_argument("--path", help="Path to file", type=str)
         parser.add_argument("--id", help="File id", type=str)
+        parser.add_argument("--snapshot", help="Snapshot ID to read from",
+                            type=int)
         parser.add_argument("--file", help="File to receive data", type=str)
         parser.add_argument("--force", action='store_true',
                             help="Overwrite an existing file")
@@ -346,7 +359,7 @@ class ReadFileCommand(qumulo.lib.opts.Subcommand):
             f = open(args.file, "wb")
 
         fs.read_file(conninfo, credentials, f, path=args.path,
-            id_=args.id)
+            id_=args.id, snapshot=args.snapshot)
         # Print nothing on success (File may be output into stdout)
 
 class ReadDirectoryCommand(qumulo.lib.opts.Subcommand):
@@ -466,3 +479,162 @@ class ResolvePathsCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, args):
         print fs.resolve_paths(conninfo, credentials, args.ids)
+
+class ListLocksByFileCommand(qumulo.lib.opts.Subcommand):
+    NAME = "fs_list_locks_by_file"
+    DESCRIPTION = "List locks held on a particular files"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--protocol", type=str, required=True,
+            choices = { p for p, t in fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS },
+            help="The protocol whose locks should be listed")
+        parser.add_argument("--lock-type", type=str, required=True,
+            choices = { t for p, t in fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS },
+            help="The type of lock to list.")
+        parser.add_argument("--path", help="File path", type=str)
+        parser.add_argument("--id", help="File id", type=str)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        if args.id and args.path:
+            raise ValueError("--path conflicts with --id")
+        elif not args.id and not args.path:
+            raise ValueError("Must specify --path or --id")
+
+        if (args.protocol, args.lock_type) not in \
+                fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS:
+            raise ValueError(
+                "Lock type {} not available for protocol {}".format(
+                    args.lock_type, args.protocol))
+
+        print json.dumps(
+            fs.list_all_locks_by_file(
+                conninfo,
+                credentials,
+                args.protocol,
+                args.lock_type,
+                args.path,
+                args.id),
+            indent=4)
+
+class ListLocksByClientCommand(qumulo.lib.opts.Subcommand):
+    NAME = "fs_list_locks_by_client"
+    DESCRIPTION = "List locks held by a particular client machine"
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--protocol", type=str, required=True,
+            choices = { p for p, t in fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS },
+            help="The protocol whose locks should be listed")
+        parser.add_argument("--lock-type", type=str, required=True,
+            choices = { t for p, t in fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS },
+            help="The type of lock to list.")
+        parser.add_argument("--name", help="Client hostname", type=str)
+        parser.add_argument("--address", help="Client IP address", type=str)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        if (args.protocol, args.lock_type) not in \
+                fs.VALID_LOCK_PROTO_TYPE_COMBINATIONS:
+            raise ValueError(
+                "Lock type {} not available for protocol {}".format(
+                    args.lock_type, args.protocol))
+
+        if args.name and (args.protocol != 'nlm'):
+            raise ValueError("--name may only be specified for NLM locks")
+
+        print json.dumps(
+            fs.list_all_locks_by_client(
+                conninfo,
+                credentials,
+                args.protocol,
+                args.lock_type,
+                args.name,
+                args.address),
+            indent=4)
+
+class ReleaseNLMLocksByClientCommand(qumulo.lib.opts.Subcommand):
+    NAME = "fs_release_nlm_locks_by_client"
+    DESCRIPTION = '''Release NLM byte range locks held by client. This method
+    releases all locks held by a particular client. This is dangerous, and
+    should only be used after confirming that the client is dead.'''
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--force",
+            help="This command can cause corruption, add this flag to \
+                release lock", action='store_true', required=False)
+        parser.add_argument("--name", help="Client hostname", type=str)
+        parser.add_argument("--address", help="Client IP address", type=str)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        if not args.name and not args.address:
+            raise ValueError("Must specify --name or --address")
+
+        if not args.force and not qumulo.lib.opts.ask(
+                ReleaseNLMLocksByClientCommand.NAME, LOCK_RELEASE_FORCE_MSG):
+            return # Operation cancelled.
+
+        fs.release_nlm_locks_by_client(
+                conninfo,
+                credentials,
+                args.name,
+                args.address)
+        params = ""
+        if args.name:
+            params += "owner_name: {}".format(args.name)
+        if args.name and args.address:
+            params += ", "
+        if args.address:
+            params += "owner_address: {}".format(args.address)
+        print "NLM byte-range locks held by {} were released.".format(params)
+
+class ReleaseNLMLockCommand(qumulo.lib.opts.Subcommand):
+    NAME = "fs_release_nlm_lock"
+    DESCRIPTION = '''Release an arbitrary NLM byte-range lock range. This is
+    dangerous, and should only be used after confirming that the owning process
+    has leaked the lock, and only if there is a very good reason why the
+    situation should not be resolved by terminating that process.'''
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--offset", help="NLM byte-range lock offset",
+                required=True, type=str)
+        parser.add_argument("--size", help="NLM byte-range lock size",
+                required=True, type=str)
+        parser.add_argument("--owner-id", help="Owner id",
+                required=True, type=str)
+        parser.add_argument("--force",
+                help="This command can cause corruption, add this flag to \
+                        release lock", action='store_true', required=False)
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument("--path", help="File path", type=str)
+        group.add_argument("--id", help="File id", type=str)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        if not args.force and not qumulo.lib.opts.ask(
+                ReleaseNLMLockCommand.NAME, LOCK_RELEASE_FORCE_MSG):
+            return # Operation cancelled.
+
+        fs.release_nlm_lock(
+                conninfo,
+                credentials,
+                args.offset,
+                args.size,
+                args.owner_id,
+                args.path,
+                args.id)
+        output = ("NLM byte-range lock with "
+                    "(offset: {0}, "
+                    "size: {1}, "
+                    "owner-id: {2}, "
+                    "{3}) "
+                    "was released.")
+        print output.format(args.offset,
+                args.size,
+                args.owner_id,
+                "file_path: {}".format(args.path) if args.path is not None \
+                else "file_id: {}".format(args.id))

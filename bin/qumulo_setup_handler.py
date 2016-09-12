@@ -15,7 +15,7 @@ class ConfigHandler(splunk.admin.MConfigHandler):
 
     def setup(self):
         if self.requestedAction == splunk.admin.ACTION_EDIT:
-            for arg in ['username', 'password','nodehost','port' ]:
+            for arg in ['nodehost','port' ]:
                 self.supportedArgs.addOptArg(arg)
 
     def handleList(self, confInfo):
