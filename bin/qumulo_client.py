@@ -51,7 +51,7 @@ class QumuloClient(object):
             self.credentials = qumulo.lib.auth.Credentials.\
                     from_login_response(login_results)
         except Exception, excpt:
-            logging.error("Error logging in to the REST server %{0}: %{1} with creds {2} / {3}".format(self.host, excpt, self.username, self.password))
+            logging.error("Error logging in to the REST server %{0}: %{1}".format(self.host, excpt))
             # sys.exit(2)
 
     def path_to_paths(self, local_path):
