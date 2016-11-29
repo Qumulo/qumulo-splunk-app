@@ -18,7 +18,7 @@ from qumulo.rest import (
     groups,
     led,
     network, nfs, node_state,
-    shutdown, smb, support,
+    shutdown, smb, snapshot, support,
     time_config,
     unconfigured_node_operations, upgrade, users,
     version)

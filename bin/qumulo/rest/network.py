@@ -12,7 +12,7 @@
 
 import qumulo.lib.request as request
 
-FIELDS = set((
+V1_SETTINGS_FIELDS = set((
     'assigned_by',
     'ip_ranges',
     'floating_ip_ranges',
@@ -39,14 +39,11 @@ def modify_cluster_network_config(conninfo, credentials, **kwargs):
     config = { }
 
     for key, value in kwargs.items():
-        assert key in FIELDS
+        assert key in V1_SETTINGS_FIELDS
         if value is not None:
             config[key] = value
 
-    # If all the fields are specified, use PUT. PATCH would work, but
-    # patch was added in 1.0.18, so this needed for the upgrade
-    # test. XXX scott: TIMEBOMB.
-    if set(kwargs.keys()) == FIELDS:
+    if set(kwargs.keys()) == V1_SETTINGS_FIELDS:
         method = "PUT"
 
     return request.rest_request(conninfo, credentials, method, uri, body=config)
@@ -62,6 +59,103 @@ def list_network_status(conninfo, credentials):
 def get_network_status(conninfo, credentials, node):
     method = "GET"
     uri = "/v1/network/status/{}".format(node)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def list_interfaces(conninfo, credentials):
+    method = "GET"
+    uri = "/v2/network/interfaces/"
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def get_interface(conninfo, credentials, interface_id):
+    method = "GET"
+    uri = "/v2/network/interfaces/{}".format(interface_id)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def list_networks(conninfo, credentials, interface_id):
+    method = "GET"
+    uri = "/v2/network/interfaces/{}/networks/".format(interface_id)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def get_network(conninfo, credentials, interface_id, network_id):
+    method = "GET"
+    uri = "/v2/network/interfaces/{}/networks/{}".format(
+        interface_id, network_id)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+# Don't allow setting interface ID and name.
+V2_INTERFACE_FIELDS = set((
+    'bonding_mode',
+    'default_gateway',
+    'mtu',
+))
+
+@request.request
+def modify_interface(conninfo, credentials, interface_id, **kwargs):
+    # Always patch and don't allow setting interface ID and name.
+    method = "PATCH"
+    uri = "/v2/network/interfaces/{}".format(interface_id)
+
+    config = { }
+
+    for key, value in kwargs.items():
+        assert key in V2_INTERFACE_FIELDS
+        if value is not None:
+            config[key] = value
+
+    if set(config.keys()) == V2_INTERFACE_FIELDS:
+        method = "PUT"
+
+    return request.rest_request(conninfo, credentials, method, uri, body=config)
+
+V2_NETWORK_FIELDS = set((
+    'assigned_by',
+    'ip_ranges',
+    'floating_ip_ranges',
+    'netmask',
+    'dns_servers',
+    'dns_search_domains',
+    'mtu',
+    'vlan_id',
+))
+
+@request.request
+def modify_network(conninfo, credentials, interface_id, network_id, **kwargs):
+    method = "PATCH"
+    uri = "/v2/network/interfaces/{}/networks/{}".format(
+        interface_id, network_id)
+
+    config = {}
+
+    for key, value in kwargs.items():
+        assert key in V2_NETWORK_FIELDS
+        if value is not None:
+            config[key] = value
+
+    if set(config.keys()) == V2_NETWORK_FIELDS:
+        method = "PUT"
+
+    return request.rest_request(conninfo, credentials, method, uri, body=config)
+
+@request.request
+def list_network_status_v2(conninfo, credentials, interface_id):
+    method = "GET"
+    uri = "/v2/network/interfaces/{}/status/".format(interface_id)
+
+    return request.rest_request(conninfo, credentials, method, uri)
+
+@request.request
+def get_network_status_v2(conninfo, credentials, interface_id, node_id):
+    method = "GET"
+    uri = "/v2/network/interfaces/{}/status/{}".format(interface_id, node_id)
 
     return request.rest_request(conninfo, credentials, method, uri)
 

@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import argparse
+
 import qumulo.lib.auth
 import qumulo.lib.opts
 import qumulo.lib.util
@@ -53,7 +55,8 @@ class ModifyClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
             raise ValueError(
                 "DHCP configuration conflicts with static configuration")
 
-        attributes = { key: getattr(args, key) for key in network.FIELDS
+        attributes = {
+            key: getattr(args, key) for key in network.V1_SETTINGS_FIELDS
                 if getattr(args, key) is not None }
 
         if not attributes:
@@ -68,15 +71,28 @@ class MonitorNetworkCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help=argparse.SUPPRESS)
         parser.add_argument("--node-id", help="Node ID")
+        parser.add_argument("--version", type=int, default=1,
+            choices=range(1, 3), help="API version to use (default 1)")
 
     @staticmethod
     def main(conninfo, credentials, args):
         if args.node_id is not None:
-            print network.get_network_status(
-                conninfo, credentials, args.node_id)
+            if args.version == 1:
+                print network.get_network_status(
+                    conninfo, credentials, args.node_id)
+            elif args.version == 2:
+                print network.get_network_status_v2(
+                    conninfo, credentials, args.interface_id, args.node_id)
+
         else:
-            print network.list_network_status(conninfo, credentials)
+            if args.version == 1:
+                print network.list_network_status(conninfo, credentials)
+            elif args.version == 2:
+                print network.list_network_status_v2(conninfo, credentials,
+                    args.interface_id)
 
 class GetClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
     NAME = "network_conf_get"
@@ -85,6 +101,128 @@ class GetClusterNetworkConfigCommand(qumulo.lib.opts.Subcommand):
     @staticmethod
     def main(conninfo, credentials, _args):
         print network.get_cluster_network_config(conninfo, credentials)
+
+class GetInterfaces(qumulo.lib.opts.Subcommand):
+    NAME = "network_list_interfaces"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def main(conninfo, credentials, _args):
+        print network.list_interfaces(conninfo, credentials)
+
+class GetInterface(qumulo.lib.opts.Subcommand):
+    NAME = "network_get_interface"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help="The unique ID of the interface")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print network.get_interface(conninfo, credentials, args.interface_id)
+
+class GetNetworks(qumulo.lib.opts.Subcommand):
+    NAME = "network_list_networks"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help=argparse.SUPPRESS)
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print network.list_networks(conninfo, credentials, args.interface_id)
+
+class GetNetwork(qumulo.lib.opts.Subcommand):
+    NAME = "network_get_network"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help=argparse.SUPPRESS)
+        parser.add_argument("--network-id", type=int, required=True,
+            help="The unique ID of the network on the interface")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        print network.get_network(conninfo, credentials,
+            args.interface_id, args.network_id)
+
+class ModInterface(qumulo.lib.opts.Subcommand):
+    NAME = "network_mod_interface"
+    # "Modify interface configuration"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help=argparse.SUPPRESS)
+
+        parser.add_argument("--default-gateway",
+            help="The default gateway address")
+        parser.add_argument("--bonding-mode",
+            choices=["ACTIVE_BACKUP", "IEEE_8023AD"],
+             help="Ethernet bonding mode")
+        parser.add_argument("--mtu", type=int,
+            help="The maximum transfer unit (MTU) in bytes")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        attributes = {
+            key: getattr(args, key) for key in network.V2_INTERFACE_FIELDS
+                if getattr(args, key) is not None }
+
+        if not attributes:
+            raise ValueError("One or more options must be specified")
+
+        print network.modify_interface(conninfo, credentials, args.interface_id,
+            **attributes)
+
+class ModNetwork(qumulo.lib.opts.Subcommand):
+    NAME = "network_mod_network"
+    # "Modify network configuration"
+    DESCRIPTION = argparse.SUPPRESS
+
+    @staticmethod
+    def options(parser):
+        parser.add_argument("--interface-id", type=int, default=1,
+            help=argparse.SUPPRESS)
+        parser.add_argument("--network_id", type=int, required=True,
+            help="The unique ID of the network on the interface")
+
+        parser.add_argument("--assigned-by", choices=["DHCP", "STATIC"],
+            help="How to assign IP address, either DHCP or STATIC")
+        parser.add_argument("--ip-ranges", action="append",
+            help="(if STATIC) List of IP ranges, e.g. 10.1.1.20-21")
+        parser.add_argument("--floating_ip_ranges", action="append",
+            help="(if STATIC) List of Floating IP ranges, e.g. 10.1.1.20-21. " \
+                "Please pass in an empty string to remove floating ips.")
+        parser.add_argument("--netmask",
+            help="(if STATIC) IPv4 Netmask")
+        parser.add_argument("--dns-servers", action="append",
+            help="(if STATIC) List of DNS Servers")
+        parser.add_argument("--dns-search-domains", action="append",
+            help="(if STATIC) List of DNS Search Domains")
+        parser.add_argument("--mtu", type=int,
+            help="(if STATIC) The Maximum Transfer Unit (MTU) in bytes")
+        parser.add_argument("--vlan-id", type=int,
+            help="(if STATIC) User-assigned VLAN_ID for network configuration")
+
+    @staticmethod
+    def main(conninfo, credentials, args):
+        attributes = {
+            key: getattr(args, key) for key in network.V2_NETWORK_FIELDS
+                if getattr(args, key) is not None }
+
+        if not attributes:
+            raise ValueError("One or more options must be specified")
+
+        print network.modify_interface(conninfo, credentials, args.interface_id,
+            args.network_id, **attributes)
 
 class GetStaticIpAllocationCommand(qumulo.lib.opts.Subcommand):
     NAME = "static_ip_allocation"

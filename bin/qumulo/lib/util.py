@@ -20,10 +20,23 @@ def bool_from_string(value):
         return False
     raise ValueError('Unable to convert "%s" to boolean' % value)
 
+figlet_yes_or_no = '''\
+__   _______ ____      _   _  ___ ___
+\\ \\ / / ____/ ___|    | \\ | |/ _ \\__ \\
+ \\ V /|  _| \\___ \\    |  \\| | | | |/ /
+  | | | |___ ___) |   | |\\  | |_| |_|
+  |_| |_____|____/ or |_| \\_|\\___/(_) '''
+
+def ask(prompt):
+    return raw_input('{} '.format(prompt)).strip().lower()
+
 def are_you_sure():
-    answer = raw_input('yes or no? ').lower()
+    prompts = ['yes or no?', 'Yes or No?', 'YES or NO?', figlet_yes_or_no]
+    times = 0
+    answer = ask(prompts[times])
     while answer != 'yes' and answer != 'no':
-        answer = raw_input('Yes or No? ').strip().lower()
+        times += 1
+        answer = ask(prompts[min(times, len(prompts) - 1)])
     return answer == 'yes'
 
 # Join two paths, force basename to be relative

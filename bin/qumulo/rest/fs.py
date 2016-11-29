@@ -58,10 +58,26 @@ def set_acl(conninfo, credentials, path=None, id_=None, control=None,
         body=config, if_match=if_match))
 
 @request.request
-def set_attr(conninfo, credentials, mode, owner, group, size,
-             modification_time, change_time, path=None, id_=None,
-             if_match=None):
+def get_attr(conninfo, credentials, path=None, id_=None, snapshot=None):
+    """
+    This function is deprecated in favor of get_file_attr.
+    """
+    assert (path is not None) ^ (id_ is not None)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "attributes"])
 
+    if snapshot:
+        uri.add_query_param('snapshot', snapshot)
+
+    method = "GET"
+    return request.rest_request(conninfo, credentials, method, unicode(uri))
+
+@request.request
+def set_attr(conninfo, credentials, mode, owner, group, size,
+        modification_time, change_time, path=None, id_=None, if_match=None):
+    """
+    Sets all file attributes on the specified file system object.
+    """
     assert (path is not None) ^ (id_ is not None)
     ref = unicode(path) if path else unicode(id_)
     uri = build_files_uri([ref, "info", "attributes"])
@@ -81,19 +97,25 @@ def set_attr(conninfo, credentials, mode, owner, group, size,
         body=config, if_match=if_match)
 
 @request.request
-def get_file_attr(conninfo, credentials, id_, snapshot=None):
-    method = "GET"
-    uri = build_files_uri([id_, "info", "attributes"])
+def get_file_attr(conninfo, credentials, id_=None, path=None, snapshot=None):
+    assert (path is not None) ^ (id_ is not None)
+    ref = unicode(path) if path else unicode(id_)
+    uri = build_files_uri([ref, "info", "attributes"])
 
     if snapshot:
         uri.add_query_param('snapshot', snapshot)
 
+    method = "GET"
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
 def set_file_attr(conninfo, credentials, mode, owner, group, size,
-                  creation_time, modification_time, change_time, id_,
-                  if_match=None):
+        creation_time, modification_time, change_time, id_, if_match=None):
+    """
+    Updates select file attributes on the specified file system object.
+    Attributes that are not to be updated should have None specified as
+    their values.
+    """
     uri = build_files_uri([id_, "info", "attributes"])
     if_match = None if not if_match else unicode(if_match)
 
@@ -146,21 +168,15 @@ def get_acl(conninfo, credentials, path=None, id_=None, snapshot=None):
     return format_output_acl(conninfo, credentials, request.rest_request(
         conninfo, credentials, method, unicode(uri)))
 
+# XXX michael: page_size should be an optional parameter to this function
 @request.request
-def get_attr(conninfo, credentials, path=None, id_=None):
-    assert (path is not None) ^ (id_ is not None)
-    ref = unicode(path) if path else unicode(id_)
-    uri = build_files_uri([ref, "info", "attributes"])
-
-    method = "GET"
-    return request.rest_request(conninfo, credentials, method, unicode(uri))
-
-@request.request
-def read_directory(conninfo, credentials, page_size, path=None, id_=None):
+def read_directory(conninfo, credentials, page_size=None, path=None, id_=None,
+        snapshot=None):
     '''
     @param {int} page_size  How many entries to return
     @param {str} path       Directory to read, by path
     @param {int} id_        Directory to read, by ID
+    @param {int} snapshot   Snapshot ID of directory to read
     '''
     assert (path is not None) ^ (id_ is not None)
 
@@ -169,8 +185,13 @@ def read_directory(conninfo, credentials, page_size, path=None, id_=None):
     uri = build_files_uri([ref, "entries"]).append_slash()
 
     method = "GET"
+
     if page_size is not None:
         uri.add_query_param("limit", page_size)
+
+    if snapshot:
+        uri.add_query_param("snapshot", snapshot)
+
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
@@ -303,10 +324,15 @@ def get_file_samples(conninfo, credentials, path, count, by_value):
     return request.rest_request(conninfo, credentials, method, unicode(uri))
 
 @request.request
-def resolve_paths(conninfo, credentials, ids):
+def resolve_paths(conninfo, credentials, ids, snapshot=None):
     method = "POST"
-    uri = "/v1/files/resolve"
-    return request.rest_request(conninfo, credentials, method, uri, body=ids)
+    uri = build_files_uri(["resolve"])
+
+    if snapshot:
+        uri.add_query_param('snapshot', snapshot)
+
+    return request.rest_request(
+        conninfo, credentials, method, unicode(uri), body=ids)
 
 #  _               _
 # | |    ___   ___| | _____
@@ -329,6 +355,7 @@ def list_locks_by_file(
         lock_type,
         file_path=None,
         file_id=None,
+        snapshot_id=None,
         limit=None,
         after=None):
     assert (protocol, lock_type) in VALID_LOCK_PROTO_TYPE_COMBINATIONS
@@ -340,6 +367,8 @@ def list_locks_by_file(
         uri.add_query_param("limit", limit)
     if after:
         uri.add_query_param("after", after)
+    if snapshot_id:
+        uri.add_query_param("snapshot", snapshot_id)
     return request.rest_request(conninfo, credentials, "GET", unicode(uri))
 
 @request.request
@@ -387,12 +416,13 @@ def list_all_locks_by_file(
         lock_type,
         file_path=None,
         file_id=None,
+        snapshot_id=None,
         limit=1000):
     '''
     Re-assembles the paginated list of lock grants for the given file.
     '''
-    result = list_locks_by_file(
-        conninfo, credentials, protocol, lock_type, file_path, file_id, limit)
+    result = list_locks_by_file(conninfo, credentials, protocol, lock_type,
+                                file_path, file_id, snapshot_id, limit)
     return _get_remaining_pages(conninfo, credentials, result, limit)
 
 @request.request
@@ -434,7 +464,8 @@ def release_nlm_lock(
         size,
         owner_id,
         file_path=None,
-        file_id=None):
+        file_id=None,
+        snapshot=None):
     assert (file_path is not None) ^ (file_id is not None)
     protocol, lock_type = 'nlm', 'byte-range'
     ref = unicode(file_path) if file_path else unicode(file_id)
@@ -443,6 +474,8 @@ def release_nlm_lock(
     uri.add_query_param("offset", offset)
     uri.add_query_param("size", size)
     uri.add_query_param("owner_id", owner_id)
+    if snapshot is not None:
+        uri.add_query_param("snapshot", snapshot)
     return request.rest_request(conninfo, credentials, "DELETE", unicode(uri))
 
 #  _   _      _
@@ -511,7 +544,7 @@ def tree_walk_preorder(conninfo, credentials, path):
                                                 f['path']):
                             yield ff
 
-    result = get_attr(conninfo, credentials, path)
+    result = get_file_attr(conninfo, credentials, path=path)
     yield result
 
     for f in call_read_dir(conninfo, credentials, path):
@@ -533,7 +566,7 @@ def tree_walk_postorder(conninfo, credentials, path):
                             yield ff
                     yield request.RestResponse(f, result.etag)
 
-    result = get_attr(conninfo, credentials, path)
+    result = get_file_attr(conninfo, credentials, path=path)
 
     for f in call_read_dir(conninfo, credentials, path):
         yield f

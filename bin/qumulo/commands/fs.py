@@ -28,8 +28,7 @@ AGG_ORDERING_CHOICES = [
     "total_files",
     "total_directories",
     "total_symlinks",
-    "total_other",
-    "max_ctime"]
+    "total_other"]
 
 LOCK_RELEASE_FORCE_MSG = "Manually releasing locks may cause data corruption, "\
                          "do you want to proceed?"
@@ -54,14 +53,20 @@ class GetFileAttrCommand(qumulo.lib.opts.Subcommand):
 
     @staticmethod
     def options(parser):
-        parser.add_argument("--id", help="File ID", type=str, required=True)
+        parser.add_argument("--path", help="Path to file", type=str)
+        parser.add_argument("--id", help="File ID", type=str)
         parser.add_argument("--snapshot", help="Snapshot ID to read from",
             type=int)
 
     @staticmethod
     def main(conninfo, credentials, args):
-        print fs.get_file_attr(conninfo, credentials, args.id,
-            snapshot=args.snapshot)
+        if args.id and args.path:
+            raise ValueError("--path conflicts with --id")
+        elif not args.id and not args.path:
+            raise ValueError("Must specify --path or --id")
+
+        print fs.get_file_attr(conninfo, credentials, id_=args.id,
+            path=args.path, snapshot=args.snapshot)
 
 class SetFileAttrCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_file_set_attr"
@@ -372,6 +377,8 @@ class ReadDirectoryCommand(qumulo.lib.opts.Subcommand):
         parser.add_argument("--id", help="Directory id", type=str)
         parser.add_argument("--page-size", type=int,
                             help="Max directory entries to return per request")
+        parser.add_argument("--snapshot", help="Snapshot ID to read from",
+                            type=int)
 
     @staticmethod
     def main(conninfo, credentials, args):
@@ -382,9 +389,14 @@ class ReadDirectoryCommand(qumulo.lib.opts.Subcommand):
         elif args.page_size is not None and args.page_size < 1:
             raise ValueError("Page size must be greater than 0")
 
-        page = fs.read_directory(conninfo, credentials, args.page_size,
-                                        args.path, args.id)
+        page = fs.read_directory(conninfo, credentials,
+            page_size=args.page_size,
+            path=args.path,
+            id_=args.id,
+            snapshot=args.snapshot)
+
         print page
+
         next_uri = json.loads(str(page))["paging"]["next"]
         while next_uri != "":
             page = request.rest_request(conninfo, credentials, "GET", next_uri)
@@ -475,10 +487,13 @@ class ResolvePathsCommand(qumulo.lib.opts.Subcommand):
     def options(parser):
         parser.add_argument("--ids", required=True, nargs="*",
             help="File IDs to resolve")
+        parser.add_argument("--snapshot", help="Snapshot ID to read from",
+            type=int)
 
     @staticmethod
     def main(conninfo, credentials, args):
-        print fs.resolve_paths(conninfo, credentials, args.ids)
+        print fs.resolve_paths(conninfo, credentials, args.ids,
+            snapshot=args.snapshot)
 
 class ListLocksByFileCommand(qumulo.lib.opts.Subcommand):
     NAME = "fs_list_locks_by_file"
@@ -494,6 +509,8 @@ class ListLocksByFileCommand(qumulo.lib.opts.Subcommand):
             help="The type of lock to list.")
         parser.add_argument("--path", help="File path", type=str)
         parser.add_argument("--id", help="File id", type=str)
+        parser.add_argument("--snapshot", type=str,
+            help="Snapshot id of the specified file.")
 
     @staticmethod
     def main(conninfo, credentials, args):
@@ -515,7 +532,8 @@ class ListLocksByFileCommand(qumulo.lib.opts.Subcommand):
                 args.protocol,
                 args.lock_type,
                 args.path,
-                args.id),
+                args.id,
+                args.snapshot),
             indent=4)
 
 class ListLocksByClientCommand(qumulo.lib.opts.Subcommand):
@@ -612,6 +630,8 @@ class ReleaseNLMLockCommand(qumulo.lib.opts.Subcommand):
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument("--path", help="File path", type=str)
         group.add_argument("--id", help="File id", type=str)
+        parser.add_argument("--snapshot",
+            help="Snapshot ID of the specified file", type=str)
 
     @staticmethod
     def main(conninfo, credentials, args):
@@ -626,15 +646,24 @@ class ReleaseNLMLockCommand(qumulo.lib.opts.Subcommand):
                 args.size,
                 args.owner_id,
                 args.path,
-                args.id)
-        output = ("NLM byte-range lock with "
-                    "(offset: {0}, "
-                    "size: {1}, "
-                    "owner-id: {2}, "
-                    "{3}) "
-                    "was released.")
-        print output.format(args.offset,
-                args.size,
-                args.owner_id,
-                "file_path: {}".format(args.path) if args.path is not None \
-                else "file_id: {}".format(args.id))
+                args.id,
+                args.snapshot)
+
+        file_path_or_id = ""
+        if args.path is not None:
+            file_path_or_id = "file_path: {}".format(args.path)
+        if args.id is not None:
+            file_path_or_id = "file_id: {}".format(args.id)
+
+        snapshot = ""
+        if args.snapshot is not None:
+            snapshot = ", snapshot: {}".format(args.snapshot)
+
+        output = (
+            "NLM byte-range lock with "
+            "(offset: {0}, size: {1}, owner-id: {2}, {3}{4})"
+            " was released."
+            ).format(args.offset, args.size, args.owner_id,
+            file_path_or_id, snapshot)
+
+        print output
